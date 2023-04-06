@@ -1,0 +1,7 @@
+-- AlterTable
+ALTER TABLE "PoeLadderItemSummary" ALTER COLUMN "explicit0Type" DROP NOT NULL,
+ALTER COLUMN "explicit1Type" DROP NOT NULL,
+ALTER COLUMN "explicit2Type" DROP NOT NULL,
+ALTER COLUMN "explicit3Type" DROP NOT NULL,
+ALTER COLUMN "explicit4Type" DROP NOT NULL,
+ALTER COLUMN "explicit5Type" DROP NOT NULL;

@@ -1,0 +1,245 @@
+type PoeApiTokenExchangeResponse {
+  access_token: String
+  expires_in: String
+  token_type: String
+  scope: String
+  refresh_token: String
+}
+
+type PoeApiProfile {
+  uuid: String
+  name: String
+  realm: String
+  guild: PoeApiProfileGuild
+  twitch: PoeApiProfileTwitch
+}
+
+type PoeApiProfileGuild {
+  name: String
+}
+
+type PoeApiProfileTwitch {
+  name: String
+}
+
+type PoeApiPublicStashResponse {
+  next_change_id: String
+  stashes: [PoeApiPublicStashChange]
+}
+
+type PoeApiPublicStashChange {
+  id: String
+  public: Boolean
+  accountName: String
+  stash: String
+  stashType: String
+  league: String
+  items: [PoeApiItem]
+}
+
+type PoeApiStashTab {
+  id: String
+  parent: String
+  name: String
+  type: String
+  index: Float
+  metadata: PoeApiStashTabMetadata
+  children: [PoeApiStashTab]
+  items: [PoeApiItem]
+}
+
+type PoeApiStashTabMetadata {
+  public: Boolean
+  folder: Boolean
+  colour: String
+}
+
+type PoeApiCharacter {
+  id: String
+  name: String
+  class: String
+  league: String
+  level: Float
+  experience: Float
+  expired: Boolean
+  deleted: Boolean
+  current: Boolean
+  equipment: [PoeApiItem]
+  inventory: [PoeApiItem]
+  jewels: [PoeApiItem]
+  passives: PoeApiCharacterPassive
+}
+
+type PoeApiCharacterPassive {
+  hashes: [Float]
+  hashes_ex: [Float]
+  #mastery_effects: TODO
+  bandit_choice: String
+  pantheon_major: String
+  pantheon_minor: String
+  #jewel_data: TODO
+}
+
+type PoeApiItemCrucibleNode {
+  orbit: Int
+  orbitIndex: Int
+  icon: String
+  allocated: Boolean
+  stats: [String]
+  in: [String]
+  out: [String]
+  skill: String
+}
+
+type PoeApiItemCrucibleMods {
+  layout: String
+}
+
+type PoeApiItem {
+  verified: Boolean
+  w: Int
+  h: Int
+  icon: String
+  support: Boolean
+  stackSize: Int
+  maxStackSize: Int
+  stackSizeText: String
+  league: String
+  id: String
+  influences: PoeApiInflunce
+  elder: Boolean
+  shaper: Boolean
+  searing: Boolean
+  tangled: Boolean
+  abyssJewel: Boolean
+  delve: Boolean
+  fractured: Boolean
+  synthesised: Boolean
+  sockets: [PoeApiItemSocket]
+  socketedItems: [PoeApiItem]
+  name: String
+  typeLine: String
+  baseType: String
+  identified: Boolean
+  itemLevel: Int
+  note: String
+  forum_note: String
+  lockedToCharacter: Boolean
+  lockedToAccount: Boolean
+  duplicated: Boolean
+  split: Boolean
+  corrupted: Boolean
+  crucible: PoeApiItemCrucibleMods
+  unmodifiable: Boolean
+  cisRaceReward: Boolean
+  seaRaceReward: Boolean
+  thRaceReward: Boolean
+  properties: [PoeApiItemProperty]
+  notableProperties: [PoeApiItemProperty]
+  requirements: [PoeApiItemProperty]
+  additionalProperties: [PoeApiItemProperty]
+  nextLevelRequirements: [PoeApiItemProperty]
+  talismanTier: Int
+  secDescrText: String
+  utilityMods: [String]
+  logbookMods: [PoeApiItemLogbookMod]
+  enchantMods: [String]
+  scourgeMods: [String]
+  implicitMods: [String]
+  ultimatumMods: [PoeApiItemUltimatumMods]
+  explicitMods: [String]
+  craftedMods: [String]
+  fracturedMods: [String]
+  cosmeticMods: [String]
+  veiledMods: [String]
+  veiled: Boolean
+  descrText: String
+  flavourText: [String]
+  flavourTextParsed: [PoeApiFlavourTextInfo]
+  prophecyText: String
+  isRelic: Boolean
+  foilVariation: Int
+  replica: Boolean
+  incubatedItem: PoeApiItemIncubatedItem
+  scourged: PoeApiItemScourged
+  ruthless: Boolean
+  frameType: Float
+  artFilename: String
+  hybrid: PoeApiItemHybrid
+  extended: PoeApiItemExtended
+  x: Int
+  y: Int
+  inventoryId: String
+  socket: Int
+  colour: String
+}
+
+type PoeApiFlavourTextInfo {
+  id: String
+  type: String
+  class: String
+}
+
+type PoeApiItemSocket {
+  group: Int
+  attr: String
+  sColour: String
+}
+
+type PoeApiItemProperty {
+  name: String
+  values: [[String]]
+  displayMode: Float
+  progress: Float
+  type: Float
+  suffix: String
+}
+
+type PoeApiItemExtended {
+  category: String
+  subcategories: [String]
+  prefixes: Float
+  suffixes: Float
+}
+
+type PoeApiItemHybrid {
+  isVaalGem: Boolean
+  baseTypeName: String
+  properties: [PoeApiItemProperty]
+  explicitMods: [String]
+  secDescrText: String
+}
+
+type PoeApiItemScourged {
+  tier: Float
+  level: Float
+  progress: Float
+  total: Float
+}
+
+type PoeApiItemIncubatedItem {
+  name: String
+  level: Int
+  progress: Float
+  total: Float
+}
+
+type PoeApiItemUltimatumMods {
+  type: String
+  tier: Int
+}
+
+type PoeApiItemLogbookMod {
+  name: String
+  faction: PoeApiItemLogbookFaction
+  mod: [String]
+}
+
+type PoeApiItemLogbookFaction {
+  id: String
+  name: String
+}
+
+type PoeApiInflunce {
+  name: String
+}

@@ -1,0 +1,4 @@
+.env*.local
+pob/data/*.txt
+pob/data/*.json
+pob/data/*.xml

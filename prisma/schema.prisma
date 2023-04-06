@@ -1,0 +1,381 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearch", "fullTextIndex"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ItemGroupInfo {
+  hashString            String  @id @unique
+  key                   String
+  tag                   String
+  properties            Json
+  baseType              String?
+  icon                  String?
+  inventoryMaxStackSize Int?
+  displayName           String?
+
+  createdAtTimestamp DateTime @default(now())
+  updatedAtTimestamp DateTime @default(now())
+
+  @@index([key])
+  @@index([tag])
+}
+
+model ItemGroupPValue {
+  hashString               String
+  league                   String   @default("NA")
+  type                     String
+  value                    Float
+  stockRangeStartInclusive Int
+  updatedAtTimestamp       DateTime
+  lookbackWindowUsedHours  Int      @default(48)
+
+  @@id([hashString, type, stockRangeStartInclusive, league])
+  @@index([hashString])
+  @@index([updatedAtTimestamp])
+  @@index([type])
+  @@index([stockRangeStartInclusive])
+}
+
+model ItemGroupPValueHourlyTimeseriesEntry {
+  hashString               String
+  league                   String   @default("NA")
+  type                     String
+  value                    Float
+  stockRangeStartInclusive Int
+  timestamp                DateTime
+
+  @@id([hashString, type, stockRangeStartInclusive, timestamp, league])
+  @@index([hashString])
+  @@index([timestamp])
+  @@index([type])
+  @@index([stockRangeStartInclusive])
+}
+
+model ItemGroupPValueDailyTimeseriesEntry {
+  hashString               String
+  league                   String   @default("NA")
+  type                     String
+  value                    Float
+  stockRangeStartInclusive Int
+  timestamp                DateTime
+
+  @@id([hashString, type, stockRangeStartInclusive, timestamp, league])
+  @@index([hashString])
+  @@index([timestamp])
+  @@index([type])
+  @@index([stockRangeStartInclusive])
+}
+
+model PublicStashListing {
+  id                  Int      @id @default(autoincrement())
+  publicStashId       String
+  league              String   @default("NA")
+  accountName         String
+  listedAtTimestamp   DateTime
+  itemGroupHashKey    String
+  itemGroupHashString String
+  stackSize           Int
+  listedValueChaos    Float
+
+  @@index([league])
+  @@index([itemGroupHashString])
+  @@index([publicStashId])
+  @@index([listedAtTimestamp])
+}
+
+model UserProfile {
+  userId                              String                                @id
+  poeProfileName                      String
+  createdAtTimestamp                  DateTime                              @default(now())
+  lastConnectedTimestamp              DateTime                              @default(now())
+  oAuthToken                          String?
+  oAuthTokenUpdatedAtTimestamp        DateTime
+  discordUserId                       String?
+  discordUserIdUpdatedAtTimestamp     DateTime?
+  tftMember                           Boolean?
+  tftMemberUpdatedAtTimestamp         DateTime?
+  CustomLadderGroup                   CustomLadderGroup[]
+  PoeCharacter                        PoeCharacter[]
+  PoeStashTab                         PoeStashTab[]
+  StashSnapshot                       StashSnapshot[]
+  StashSnapshotProfile                StashSnapshotProfile[]
+  twitchStreamerProfile               TwitchStreamerProfile?
+  StashSnapshotItemGroupSummary       StashSnapshotItemGroupSummary[]
+  CharacterSnapshotRecord             CharacterSnapshotRecord[]
+  AtlasPassiveTreeSnapshot            AtlasPassiveTreeSnapshot[]
+  CharacterSnapshotSearchableSummary2 CharacterSnapshotSearchableSummary2[]
+}
+
+model TwitchStreamerProfile {
+  userId             String      @id @unique
+  profileName        String
+  viewCount          Int
+  lastVideoTimestamp DateTime
+  updatedAtTimestamp DateTime
+  UserProfile        UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model PoeStashTab {
+  id          String
+  userId      String
+  league      String
+  parent      String?
+  name        String
+  type        String
+  index       Int
+  flatIndex   Int?
+  UserProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([userId, id, league])
+}
+
+model StashSnapshotProfile {
+  id                               String
+  userId                           String
+  name                             String
+  league                           String
+  public                           Boolean
+  poeStashTabIds                   String[]
+  valuationTargetPValue            String
+  valuationStockInfluence          String
+  createdAtTimestamp               DateTime        @default(now())
+  automaticSnapshotIntervalSeconds Int?
+  lastSnapshotTimestamp            DateTime?
+  StashSnapshot                    StashSnapshot[]
+  UserProfile                      UserProfile     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([id, userId])
+}
+
+model StashSnapshot {
+  id                            String                          @id
+  league                        String
+  userId                        String
+  snapshotProfileId             String?
+  createdAtTimestamp            DateTime                        @default(now())
+  tags                          String[]
+  totalValueChaos               Float
+  divineChaosValue              Float
+  exaltChaosValue               Float
+  StashSnapshotProfile          StashSnapshotProfile?           @relation(fields: [snapshotProfileId, userId], references: [id, userId], onDelete: Cascade)
+  UserProfile                   UserProfile                     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  StashSnapshotItemGroupSummary StashSnapshotItemGroupSummary[]
+}
+
+model StashSnapshotItemGroupSummary {
+  userId              String
+  stashSnapshotId     String
+  createdAtTimestamp  DateTime @default(now())
+  league              String   @default("NA")
+  itemGroupHashString String
+  quantity            Int
+  valueChaos          Float
+  totalValueChaos     Float
+  stashLocations      Json[]
+
+  stashSnapshot StashSnapshot @relation(fields: [stashSnapshotId], references: [id], onDelete: Cascade)
+  UserProfile   UserProfile   @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@id([itemGroupHashString, stashSnapshotId])
+  @@index([userId])
+  @@index([stashSnapshotId])
+  @@index([itemGroupHashString])
+}
+
+model GenericParam {
+  key         String @id
+  valueString String
+}
+
+model PoeCharacter {
+  id                              String      @id
+  userId                          String
+  createdAtTimestamp              DateTime    @default(now())
+  lastSnapshotTimestamp           DateTime?
+  name                            String
+  lastLeague                      String?
+  lastSnapshotHash                String?
+  lastSnapshotHashUpdateTimestamp DateTime?
+  UserProfile                     UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+}
+
+model CharacterSnapshotRecord {
+  id          String   @id @unique
+  userId      String
+  characterId String
+  timestamp   DateTime
+  experience  BigInt
+  level       Int
+  source      String
+
+  UserProfile UserProfile? @relation(fields: [userId], references: [userId])
+}
+
+model AtlasPassiveTreeSnapshot {
+  userId                  String
+  league                  String
+  systemSnapshotTimestamp DateTime
+  createdAtTimestamp      DateTime
+  hashes                  Int[]
+  source                  String
+
+  UserProfile UserProfile? @relation(fields: [userId], references: [userId])
+
+  @@id([userId, league, systemSnapshotTimestamp])
+  @@index([userId, systemSnapshotTimestamp])
+  @@index([league])
+  @@index([source])
+}
+
+model CharacterSnapshotSearchableSummary2 {
+  userId                  String?
+  poeProfileName          String?
+  snapshotId              String    @unique
+  createdAtTimestamp      DateTime
+  systemSnapshotTimestamp DateTime?
+  source                  String    @default("user")
+  league                  String
+  characterId             String    @id @unique
+  characterClass          String
+  mainSkillKey            String?
+  passiveNodeKeys         String[]
+  itemKeys                String[]
+  life                    Int?
+  name                    String?
+  energyShield            Int?
+  level                   Int?
+  twitchProfileName       String?
+  pobDps                  Int?
+  totalValueChaos         Int?
+  totalValueDivine        Float?
+  topItems                Json[]
+
+  UserProfile UserProfile? @relation(fields: [userId], references: [userId])
+
+  @@index([characterId])
+  @@index([createdAtTimestamp])
+  @@index([mainSkillKey])
+  @@index([userId])
+  @@index([league])
+  @@index([characterClass])
+  @@index([passiveNodeKeys])
+  @@index([itemKeys])
+  @@index([systemSnapshotTimestamp])
+  @@index([source])
+  @@index([totalValueChaos])
+  @@index([totalValueDivine])
+  @@index([pobDps])
+}
+
+model CustomLadderGroup {
+  id                 String
+  ownerUserId        String
+  name               String
+  createdAtTimestamp DateTime
+  members            Json[]
+  UserProfile        UserProfile @relation(fields: [ownerUserId], references: [userId], onDelete: Cascade)
+
+  @@id([id, ownerUserId])
+}
+
+model PoeLeagueActivitySnapshot {
+  league              String
+  lookbackWindowHours Int      @default(6)
+  timestamp           DateTime
+  players             Int
+
+  @@id([league, timestamp, lookbackWindowHours])
+  @@index([league, timestamp])
+}
+
+model PoePublicStashUpdateRecord {
+  publicStashId String @id
+  league        String
+
+  poeProfileName String
+
+  stashName            String?
+  lastPoeCharacterName String?
+  stashType            String?
+
+  createdAtTimestamp DateTime
+  updatedAtTimestamp DateTime
+
+  delisted Boolean @default(false)
+
+  @@index([league])
+  @@index([publicStashId])
+  @@index([updatedAtTimestamp])
+  @@index([lastPoeCharacterName])
+}
+
+model PoeProfileToCharacterMapping {
+  poeProfileName       String
+  lastPoeCharacterName String
+
+  lastLeague String?
+
+  createdAtTimestamp DateTime
+  updatedAtTimestamp DateTime
+
+  @@id([poeProfileName, lastPoeCharacterName])
+  @@index([poeProfileName])
+  @@index([lastPoeCharacterName])
+  @@index([lastLeague])
+  @@index([updatedAtTimestamp])
+}
+
+model DiscordServiceMessageRecord {
+  messageId       String @id
+  guildId         String
+  channelId       String
+  senderDiscordId String
+
+  timestamp DateTime
+
+  type       String
+  properties Json
+}
+
+model PoeCrucibleItemListing {
+  id                String   @id
+  publicStashId     String
+  itemId            String
+  league            String
+  accountName       String
+  listedAtTimestamp DateTime
+
+  itemBaseType  String?
+  itemBaseGroup String?
+  itemName      String?
+  itemLevel     Int
+  frameType     Int
+  corrupted     Boolean
+
+  listedValue Float
+
+  @@index([league])
+  @@index([itemId])
+  @@index([itemBaseType])
+  @@index([itemLevel])
+  @@index([publicStashId])
+  @@index([listedAtTimestamp])
+  @@index([listedValue])
+}
+
+model PoeCrucibleItemListingSkillPaths {
+  id                    String @id
+  publicStashId         String
+  crucibleItemListingId String
+
+  skillPathIds Int[]
+
+  @@index([publicStashId])
+  @@index([crucibleItemListingId])
+  @@index([skillPathIds])
+}

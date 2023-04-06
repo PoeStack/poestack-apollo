@@ -1,0 +1,9 @@
+schema: ["./poe.schema.graphql"]
+generates:
+  ./src/gql/__generated__/resolvers-types.ts:
+    plugins:
+      - "typescript"
+      - "typescript-resolvers"
+    config:
+      useIndexSignature: true
+      contextType: "../../index#PoeStackContext"
