@@ -182,7 +182,7 @@ process
     container.resolve(CharacterVectorService).startBackgroundJob();
   }
 
-  await container.resolve(StashViewService).test();
+  //await container.resolve(StashViewService).test();
 
   /*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
     container.resolve(TwitchService).startStreamerJob();

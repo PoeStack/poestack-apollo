@@ -1086,13 +1086,18 @@ export class GqlStashViewItemSummary {
   @Field()
   y: number;
   @Field()
-  stackSize: number;
+  quantity: number;
 
   @Field()
   searchableString: string;
 
   @Field({ nullable: true })
-  itemGroupHashString: string;
+  itemGroupHashString?: string;
   @Field({ nullable: true })
-  itemGroupTag: string;
+  itemGroupTag?: string;
+
+  @Field({ nullable: true })
+  valueChaos?: number;
+  @Field({ nullable: true })
+  totalValueChaos?: number;
 }

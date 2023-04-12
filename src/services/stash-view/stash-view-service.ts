@@ -9,6 +9,8 @@ import { singleton } from "tsyringe";
 import NodeCache from "node-cache";
 import { StashViewItemSummary } from "@prisma/client";
 import ItemGroupingService from "../pricing/item-grouping-service";
+import ItemValueHistoryService from "../pricing/item-value-history-service";
+import { GqlStashViewItemSummary } from "../../models/basic-models";
 
 @singleton()
 export default class StashViewService {
@@ -17,7 +19,8 @@ export default class StashViewService {
     private readonly postgresService: PostgresService,
     private readonly userService: UserService,
     private readonly s3Service: S3Service,
-    private readonly itemGroupingService: ItemGroupingService
+    private readonly itemGroupingService: ItemGroupingService,
+    private readonly itemValueHistoryService: ItemValueHistoryService
   ) {}
 
   public async updateAllTabs(userId: string, league: string) {
@@ -32,12 +35,15 @@ export default class StashViewService {
       .filter((e) => !["MapStash", "UniqueStash"].includes(e.type))
       .map((e) => e.id);
 
-    const itemSummariesToWrite: StashViewItemSummary[] = [];
     for await (const tab of this.poeApi.fetchStashTabsWithRetry(
       authToken,
       tabIds,
       league
     )) {
+      if (!tab) {
+        continue;
+      }
+
       tab["userId"] = userId;
       tab["updatedAtTimestamp"] = new Date();
 
@@ -47,6 +53,7 @@ export default class StashViewService {
         tab
       );
 
+      const itemSummariesToWrite: StashViewItemSummary[] = [];
       for (const item of tab.items) {
         const group = this.itemGroupingService.findOrCreateItemGroup(item);
 
@@ -63,21 +70,39 @@ export default class StashViewService {
           stashId: tab.id,
           x: item.x,
           y: item.y,
-          stackSize: item.stackSize ?? 1,
-          searchableString: searchableString,
+          quantity: item.stackSize ?? 1,
+          searchableString: searchableString.toLowerCase(),
           itemGroupHashString: group?.hashString,
           itemGroupTag: group?.tag,
         };
         itemSummariesToWrite.push(summary);
       }
-    }
 
-    await this.postgresService.prisma.stashViewItemSummary.deleteMany({
-      where: { userId: userId, stashId: { in: tabIds } },
+      await this.postgresService.prisma.stashViewItemSummary.deleteMany({
+        where: { userId: userId, stashId: tab.id },
+      });
+      await this.postgresService.prisma.stashViewItemSummary.createMany({
+        data: itemSummariesToWrite,
+      });
+    }
+  }
+
+  public async fetchItemSummaries(
+    userId: string,
+    league: string
+  ): Promise<GqlStashViewItemSummary[]> {
+    const items =
+      await this.postgresService.prisma.stashViewItemSummary.findMany({
+        where: { userId: userId, league: league },
+      });
+
+    await this.itemValueHistoryService.injectItemPValue(items, {
+      league: league,
+      valuationStockInfluence: "smart-influnce",
+      valuationTargetPValue: "p10",
     });
-    await this.postgresService.prisma.stashViewItemSummary.createMany({
-      data: itemSummariesToWrite,
-    });
+
+    return items;
   }
 
   public async test() {

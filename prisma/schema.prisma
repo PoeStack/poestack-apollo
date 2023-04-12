@@ -300,7 +300,6 @@ model PoePublicStashUpdateRecord {
   poeProfileName String
 
   stashName            String?
-  lastPoeCharacterName String?
   stashType            String?
 
   createdAtTimestamp DateTime
@@ -310,23 +309,6 @@ model PoePublicStashUpdateRecord {
 
   @@index([league])
   @@index([publicStashId])
-  @@index([updatedAtTimestamp])
-  @@index([lastPoeCharacterName])
-}
-
-model PoeProfileToCharacterMapping {
-  poeProfileName       String
-  lastPoeCharacterName String
-
-  lastLeague String?
-
-  createdAtTimestamp DateTime
-  updatedAtTimestamp DateTime
-
-  @@id([poeProfileName, lastPoeCharacterName])
-  @@index([poeProfileName])
-  @@index([lastPoeCharacterName])
-  @@index([lastLeague])
   @@index([updatedAtTimestamp])
 }
 
@@ -348,9 +330,9 @@ model StashViewItemSummary {
   league  String
   stashId String
 
-  x         Int
-  y         Int
-  stackSize Int
+  x        Int
+  y        Int
+  quantity Int
 
   searchableString String
 

@@ -129,7 +129,6 @@ export default class PublicStashStreamService {
           await this.postgresService.prisma.poePublicStashUpdateRecord.upsert({
             where: { publicStashId: e.id },
             update: {
-              lastPoeCharacterName: e["lastCharacterName"] ?? "NA",
               stashName: e.stash,
               updatedAtTimestamp: new Date(),
               delisted: false,
@@ -142,7 +141,6 @@ export default class PublicStashStreamService {
               createdAtTimestamp: new Date(),
               updatedAtTimestamp: new Date(),
               delisted: false,
-              lastPoeCharacterName: e["lastCharacterName"] ?? "NA",
               stashName: e.stash,
               stashType: e.stashType,
             },

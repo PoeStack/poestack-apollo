@@ -17,15 +17,17 @@ export class LeagueActivityService {
         const lookbackWindows = [1, 6, 12, 24, 48];
         for (const window of lookbackWindows) {
           const interval = Prisma.raw(`'${window} hour'`);
-          const activity: any[] = await this.postgresService.prisma.$queryRaw`
-            select "lastLeague", count(*) from (select distinct on ("poeProfileName") * from "PoeProfileToCharacterMapping") ps
-            where "lastLeague" is not null and "updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL ${interval}
-            group by "lastLeague"
-            order by "count" desc`;
+          const activity: { league: string; count: number }[] = await this
+            .postgresService.prisma.$queryRaw`
+          select league, count(*) from (
+          select "league" from "PoePublicStashUpdateRecord"
+          where "updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL ${interval}
+          group by "poeProfileName", "league" 
+          ) x group by league`;
 
           for (const e of activity) {
             const update = {
-              league: e.lastLeague,
+              league: e.league,
               timestamp: timestamp,
               lookbackWindowHours: window,
               players: Number(e.count),
@@ -33,7 +35,7 @@ export class LeagueActivityService {
             await this.postgresService.prisma.poeLeagueActivitySnapshot.upsert({
               where: {
                 league_timestamp_lookbackWindowHours: {
-                  league: e.lastLeague,
+                  league: e.league,
                   timestamp: timestamp,
                   lookbackWindowHours: window,
                 },

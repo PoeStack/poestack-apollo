@@ -68,30 +68,37 @@ export default class ItemValueHistoryService {
   }
 
   public async injectItemPValue(
-    stashProfile: GqlDetachedStashSnapshotInput,
-    items: GqlStashSnapshotItemGroupSummary[]
+    items: { itemGroupHashString: string; quantity: number }[],
+    options: {
+      league: string;
+      valuationTargetPValue: string;
+      valuationStockInfluence: string;
+    }
   ) {
-    const allItemGroupHashStrings = items.map((i) => i.itemGroupHashString);
+    const itemsWithItemGroup = items.filter((e) => !!e.itemGroupHashString);
 
-    const pValueTarget = stashProfile?.valuationTargetPValue ?? "p10";
+    const allItemGroupHashStrings = itemsWithItemGroup
+      .map((i) => i.itemGroupHashString);
+
+    const pValueTarget = options?.valuationTargetPValue ?? "p10";
     const itemGroupPValues =
       await this.postgresService.prisma.itemGroupPValue.findMany({
         where: {
           type: pValueTarget,
-          league: stashProfile.league,
+          league: options.league,
           hashString: { in: allItemGroupHashStrings },
         },
       });
 
     const groupPValues = _.groupBy(itemGroupPValues, (e) => e.hashString);
-    for (const item of items) {
+    for (const item of itemsWithItemGroup) {
       const pValues = groupPValues[item.itemGroupHashString];
       if (pValues) {
         let selectedPValue = pValues.find(
           (e) => e.stockRangeStartInclusive === 0 && e.type === pValueTarget
         )?.value;
 
-        if (stashProfile?.valuationStockInfluence === "smart-influence") {
+        if (options?.valuationStockInfluence === "smart-influence") {
           const sortedPValues = pValues
             .filter((e) => e.type === pValueTarget)
             .sort(
@@ -104,8 +111,8 @@ export default class ItemValueHistoryService {
           }
         }
 
-        item.valueChaos = selectedPValue ?? 0;
-        item.totalValueChaos = selectedPValue * item.quantity;
+        item["valueChaos"] = selectedPValue ?? 0;
+        item["totalValueChaos"] = selectedPValue * item.quantity;
       }
     }
   }
