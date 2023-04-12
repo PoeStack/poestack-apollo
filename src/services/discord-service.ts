@@ -89,7 +89,7 @@ export default class DiscordService {
   public async ping(msg: string) {
     try {
       await fetch(
-        "https://discord.com/api/webhooks/1065504177834438706/gjnkNZpyAeLvJ4F5zh9WKkzQ8xAmX_7fb3osPc3JGURdwN2mTmZSuM7DM7xxk1vGS0ID",
+        process.env.DISCORD_WEB_HOOK,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

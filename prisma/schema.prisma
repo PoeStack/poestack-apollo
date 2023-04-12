@@ -347,7 +347,6 @@ model StashViewTabSummary {
   league  String
   stashId String
 
-  folder    String?
   name      String?
   type      String?
   color     String?
@@ -357,7 +356,9 @@ model StashViewTabSummary {
   updatedAtTimestamp DateTime
   createdAtTimestamp DateTime
 
-  summary Json?
+  summary                   Json?
+  summaryUpdatedAtTimestamp DateTime?
 
   @@id([userId, stashId, league])
+  @@index([userId])
 }

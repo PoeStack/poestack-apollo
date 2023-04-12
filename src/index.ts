@@ -3,6 +3,7 @@ import "reflect-metadata";
 import * as dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 
+import { StashViewResolver } from "./resolvers/stash-view-resolver";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
@@ -98,6 +99,7 @@ process
       AtlasPassiveSnapshotResolve,
       CustomLadderGroupResolver,
       PublicStashResolver,
+      StashViewResolver,
     ],
     validate: false,
     container: {
@@ -180,11 +182,9 @@ process
     container.resolve(CharacterVectorService).startBackgroundJob();
   }
 
-   await container
-    .resolve(StashViewService).test();
+  await container.resolve(StashViewService).test();
 
-
-    /*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
+  /*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
     container.resolve(TwitchService).startStreamerJob();
   } */
 

@@ -632,6 +632,9 @@ export class GqlCharacterSnapshotItem {
   @Field(() => [GraphQLJSON])
   sockets: any[];
 
+  @Field(() => GraphQLJSON, { nullable: true })
+  crucible: any;
+
   @Field()
   frameType: number;
 
@@ -1067,16 +1070,33 @@ export class GqlPublicStashUpdateRecordSearch {
   poeProfileNames: string[];
 }
 
-@InputType("PublicStashUpdateRecordSearch")
-export class GqlStashViewOverview {
+@ObjectType("StashViewTabSummary")
+export class GqlStashViewTabSummary {
   @Field()
   userId: string;
-
   @Field()
   league: string;
+  @Field()
+  stashId: string;
 
-  @Field(() => [GraphQLJSON], { nullable: true })
-  poeStashTabs: PoeApiStashTab[];
   @Field({ nullable: true })
-  poeStashTabsUpdatedAtTimestamp: Date;
+  name: string;
+  @Field({ nullable: true })
+  type: string;
+  @Field({ nullable: true })
+  color: string;
+  @Field({ nullable: true })
+  index: number;
+  @Field({ nullable: true })
+  flatIndex: number;
+
+  @Field()
+  updatedAtTimestamp: Date;
+  @Field()
+  createdAtTimestamp: Date;
+
+  @Field(() => GraphQLJSON, { nullable: true })
+  summary: any;
+  @Field({ nullable: true })
+  summaryUpdatedAtTimestamp: Date;
 }

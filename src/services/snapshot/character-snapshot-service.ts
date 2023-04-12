@@ -436,6 +436,7 @@ export default class CharacterSnapshotService {
         icon: e.icon,
         w: e.w,
         h: e.h,
+        crucible: e.crucible,
         corrupted: e.corrupted,
         gemColor: e.colour,
         socket: e.socket,

@@ -1,5 +1,4 @@
 import { Logger } from "./../logger";
-import { GqlStashViewOverview } from "./../../models/basic-models";
 import { PoeApiStashTab } from "@gql/resolvers-types";
 import PostgresService from "../mongo/postgres-service";
 import PoeApi from "../poe/poe-api";
@@ -55,18 +54,17 @@ export default class StashViewService {
           updatedAtTimestamp: new Date(),
           index: tab.index,
           flatIndex: flatIndex,
-          color: tab.metadata.colour,
-          folder: tab.parent,
+          color: tab.metadata?.colour,
           name: tab.name,
           type: tab.type,
-          summary: null,
         },
         update: {
           updatedAtTimestamp: new Date(),
-          color: tab.metadata.colour,
-          folder: tab.parent,
+          color: tab.metadata?.colour,
           name: tab.name,
           type: tab.type,
+          index: tab.index,
+          flatIndex: flatIndex,
         },
       });
 
@@ -74,22 +72,44 @@ export default class StashViewService {
     }
   }
 
-  public async test() {
-/*     const userId = "d3d595b6-6982-48f9-9358-048292beb8a7";
-    const league = "Crucible";
+  public async updateAllTabs(userId: string, league: string) {
+    const authToken = await this.userService.fetchUserOAuthTokenSafe(userId);
 
-    if (
-      new Date().getTime() -
-        new Date(overview.poeStashTabsUpdatedAtTimestamp).getTime() >
-      1000 * 60 * 10
-    ) {
-      await this.updateStashTabs(overview);
-    }
-
-    const tabsToUpdate = overview.poeStashTabs.filter((e) =>
-      e.name.startsWith("D-")
+    const tabs = await this.postgresService.prisma.stashViewTabSummary.findMany(
+      {
+        where: { userId: userId, league: league },
+        select: { type: true, stashId: true },
+      }
     );
 
-    Logger.info("asdasd"); */
+    for await (const tab of this.poeApi.fetchStashTabsWithRetry(
+      authToken,
+      tabs
+        .filter((e) => !["MapStash", "UniqueStash"].includes(e.type))
+        .map((e) => e.stashId),
+      league
+    )) {
+      tab['userId'] = userId;
+      tab['updatedAtTimestamp'] = new Date();
+
+      await this.s3Service.putJson(
+        "poe-stack-stash-view",
+        `tabs/${userId}/${league}/${tab.id}.json`,
+        tab
+      );
+
+      Logger.info("asdasd");
+    }
+  }
+
+  public async test() {
+    const userId = "d3d595b6-6982-48f9-9358-048292beb8a7";
+    const league = "Crucible";
+
+    //await this.updateStashTabs(userId, league);
+
+    //await this.updateAllTabs(userId, league);
+
+    Logger.info("asdasd");
   }
 }
