@@ -37,13 +37,16 @@ export class S3Service {
   }
 
   public async getJson(bucket: string, key: string) {
-    const resp = await this.s3
-      .getObject({
-        Bucket: bucket,
-        Key: key,
-      })
-      .promise();
-    const body = resp?.Body?.toString();
-    return JSON.parse(body);
+    try {
+      const resp = await this.s3
+        .getObject({
+          Bucket: bucket,
+          Key: key,
+        })
+        .promise();
+      const body = resp?.Body?.toString();
+      return JSON.parse(body);
+    } catch (e) {}
+    return null;
   }
 }

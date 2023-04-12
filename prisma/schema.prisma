@@ -342,40 +342,22 @@ model DiscordServiceMessageRecord {
   properties Json
 }
 
-model PoeCrucibleItemListing {
-  id                String   @id
-  publicStashId     String
-  itemId            String
-  league            String
-  accountName       String
-  listedAtTimestamp DateTime
+model StashViewTabSummary {
+  userId  String
+  league  String
+  stashId String
 
-  itemBaseType  String?
-  itemBaseGroup String?
-  itemName      String?
-  itemLevel     Int
-  frameType     Int
-  corrupted     Boolean
+  folder    String?
+  name      String?
+  type      String?
+  color     String?
+  index     Int?
+  flatIndex Int?
 
-  listedValue Float
+  updatedAtTimestamp DateTime
+  createdAtTimestamp DateTime
 
-  @@index([league])
-  @@index([itemId])
-  @@index([itemBaseType])
-  @@index([itemLevel])
-  @@index([publicStashId])
-  @@index([listedAtTimestamp])
-  @@index([listedValue])
-}
+  summary Json?
 
-model PoeCrucibleItemListingSkillPaths {
-  id                    String @id
-  publicStashId         String
-  crucibleItemListingId String
-
-  skillPathIds Int[]
-
-  @@index([publicStashId])
-  @@index([crucibleItemListingId])
-  @@index([skillPathIds])
+  @@id([userId, stashId, league])
 }

@@ -1,3 +1,4 @@
+import { PoeApiStashTab } from "@gql/resolvers-types";
 import { GraphQLBigInt, GraphQLJSON, GraphQLJSONObject } from "graphql-scalars";
 import { Field, InputType, Int, ObjectType } from "type-graphql";
 
@@ -1064,4 +1065,18 @@ export class GqlPublicStashUpdateRecordResponse {
 export class GqlPublicStashUpdateRecordSearch {
   @Field(() => [String])
   poeProfileNames: string[];
+}
+
+@InputType("PublicStashUpdateRecordSearch")
+export class GqlStashViewOverview {
+  @Field()
+  userId: string;
+
+  @Field()
+  league: string;
+
+  @Field(() => [GraphQLJSON], { nullable: true })
+  poeStashTabs: PoeApiStashTab[];
+  @Field({ nullable: true })
+  poeStashTabsUpdatedAtTimestamp: Date;
 }

@@ -41,6 +41,7 @@ import { RePoeService } from "./services/re-poe-service";
 import ItemGroupingService from "./services/pricing/item-grouping-service";
 import ItemValueHistoryStreamService from "./services/pricing/item-value-history-stream-service";
 import CharacterVectorService from "./services/snapshot/character-vector-service";
+import StashViewService from "./services/stash-view/stash-view-service";
 
 dotenv.config({ path: ".env.local" });
 
@@ -179,17 +180,13 @@ process
     container.resolve(CharacterVectorService).startBackgroundJob();
   }
 
-  /*   container
-    .resolve(CharacterSnapshotService)
-    .takeSnapshot(
-      "d3d595b6-6982-48f9-9358-048292beb8a7",
-      "1c9efda24564ba2102b60e54cfab2dd8e2a960111546a0bf9f656bf8c688434d",
-      "user"
-    );
- */
-  if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
+   await container
+    .resolve(StashViewService).test();
+
+
+    /*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
     container.resolve(TwitchService).startStreamerJob();
-  }
+  } */
 
   container.resolve(DiscordService).start();
 })();

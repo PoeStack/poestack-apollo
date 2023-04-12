@@ -10,10 +10,6 @@ import DiscordService from "../discord-service";
 import { Logger } from "../logger";
 import { S3Service } from "../s3-service";
 import _ from "lodash";
-import {
-  PoeCrucibleItemListing,
-  PoeCrucibleItemListingSkillPaths,
-} from "@prisma/client";
 import { RePoeService } from "../re-poe-service";
 
 @singleton()
@@ -79,9 +75,6 @@ export default class PublicStashStreamService {
     sw.start("map");
     const toWrite = {};
 
-    const crucibleListingsToWrite: PoeCrucibleItemListing[] = [];
-    const crucibleListingsPathsToWrite: PoeCrucibleItemListingSkillPaths[] = [];
-
     const stashUpdates = [...response.stashes];
     while (stashUpdates.length > 0) {
       const publicStashUpdate = stashUpdates.shift();
@@ -117,41 +110,6 @@ export default class PublicStashStreamService {
               };
               stashSummary.itemSummaries.push(summary);
             }
-
-            /* if (item.crucible) {
-              const allPaths: number[][] = await this.computeAllCruciblePaths(
-                item
-              );
-
-              const crucibleListing: PoeCrucibleItemListing = {
-                id: nanoid(),
-                publicStashId: stashSummary._id,
-                itemId: item.id,
-                league: item.league,
-                accountName: stashSummary.accountName,
-                listedAtTimestamp: updateDate,
-                itemBaseType: item.baseType?.toLowerCase(),
-                itemName: item.name?.toLowerCase(),
-                itemBaseGroup:
-                  this.rePoeService.baseToItemClassMapping[
-                    item.baseType?.toLowerCase()
-                  ],
-                itemLevel: item["ilvl"] ?? item.itemLevel,
-                corrupted: !!item.corrupted,
-                listedValue: noteValue,
-                frameType: item.frameType,
-              };
-              crucibleListingsToWrite.push(crucibleListing);
-
-              for (const path of allPaths) {
-                crucibleListingsPathsToWrite.push({
-                  id: nanoid(),
-                  publicStashId: stashSummary._id,
-                  crucibleItemListingId: crucibleListing.id,
-                  skillPathIds: path,
-                });
-              }
-            } */
           }
         }
       }
@@ -161,37 +119,6 @@ export default class PublicStashStreamService {
     sw.stop("map");
 
     await this.executeListingUpdates(toWrite);
-    await this.executeCrucibleListingUpdate(
-      crucibleListingsToWrite,
-      crucibleListingsPathsToWrite
-    );
-  }
-
-  private async executeCrucibleListingUpdate(
-    crucibleListingsToWrite: PoeCrucibleItemListing[],
-    crucibleListingsPathsToWrite: PoeCrucibleItemListingSkillPaths[]
-  ) {
-    const idsToDelete = _.uniq(
-      crucibleListingsToWrite.map((e) => e.publicStashId)
-    );
-
-    await this.postgresService.prisma.poeCrucibleItemListing.deleteMany({
-      where: { publicStashId: { in: idsToDelete } },
-    });
-    await this.postgresService.prisma.poeCrucibleItemListingSkillPaths.deleteMany(
-      {
-        where: { publicStashId: { in: idsToDelete } },
-      }
-    );
-
-    await this.postgresService.prisma.poeCrucibleItemListing.createMany({
-      data: crucibleListingsToWrite,
-    });
-    await this.postgresService.prisma.poeCrucibleItemListingSkillPaths.createMany(
-      {
-        data: crucibleListingsPathsToWrite,
-      }
-    );
   }
 
   private async updateStashListingRecords(response: PoeApiPublicStashResponse) {
