@@ -1070,8 +1070,10 @@ export class GqlPublicStashUpdateRecordSearch {
   poeProfileNames: string[];
 }
 
-@ObjectType("StashViewTabSummary")
-export class GqlStashViewTabSummary {
+@ObjectType("StashViewItemSummary")
+export class GqlStashViewItemSummary {
+  @Field()
+  itemId: string;
   @Field()
   userId: string;
   @Field()
@@ -1079,24 +1081,18 @@ export class GqlStashViewTabSummary {
   @Field()
   stashId: string;
 
-  @Field({ nullable: true })
-  name: string;
-  @Field({ nullable: true })
-  type: string;
-  @Field({ nullable: true })
-  color: string;
-  @Field({ nullable: true })
-  index: number;
-  @Field({ nullable: true })
-  flatIndex: number;
+  @Field()
+  x: number;
+  @Field()
+  y: number;
+  @Field()
+  stackSize: number;
 
   @Field()
-  updatedAtTimestamp: Date;
-  @Field()
-  createdAtTimestamp: Date;
+  searchableString: string;
 
-  @Field(() => GraphQLJSON, { nullable: true })
-  summary: any;
   @Field({ nullable: true })
-  summaryUpdatedAtTimestamp: Date;
+  itemGroupHashString: string;
+  @Field({ nullable: true })
+  itemGroupTag: string;
 }

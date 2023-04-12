@@ -342,23 +342,18 @@ model DiscordServiceMessageRecord {
   properties Json
 }
 
-model StashViewTabSummary {
+model StashViewItemSummary {
+  itemId  String @id
   userId  String
   league  String
   stashId String
 
-  name      String?
-  type      String?
-  color     String?
-  index     Int?
-  flatIndex Int?
+  x         Int
+  y         Int
+  stackSize Int
 
-  updatedAtTimestamp DateTime
-  createdAtTimestamp DateTime
+  searchableString String
 
-  summary                   Json?
-  summaryUpdatedAtTimestamp DateTime?
-
-  @@id([userId, stashId, league])
-  @@index([userId])
+  itemGroupHashString String?
+  itemGroupTag        String?
 }

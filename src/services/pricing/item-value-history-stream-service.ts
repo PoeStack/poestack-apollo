@@ -282,7 +282,7 @@ export default class ItemValueHistoryStreamService {
 
         await new Promise((res) => setTimeout(res, 60000));
 
-        if (hourlyWrites % 3 === 0) {
+        if (hourlyWrites % 2 === 0) {
           this.discordService.ping("starting daily history bulk write.");
           sw.start("daily");
           await this.runDailyInsert();
@@ -290,7 +290,9 @@ export default class ItemValueHistoryStreamService {
           this.discordService.ping(
             `daily history bulk write ${sw.dump("daily")}.`
           );
-        } else if (hourlyWrites % 2 === 0) {
+        } 
+        
+        if (hourlyWrites % 2 === 0) {
           await this.uploadPriceDataToGithub();
         }
       } catch (error) {
@@ -310,7 +312,7 @@ export default class ItemValueHistoryStreamService {
         .$queryRaw`
         select distinct "type" from "ItemGroupPValue" p
         right join "ItemGroupInfo" i on p."hashString" = i."hashString"
-        where "league" = ${league}`;
+        where "league" = ${league} and "updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '2 day'`;
 
       for (const type of tags.map((e) => e.type)) {
         const rows: any[] = await this.postgresService.prisma.$queryRaw`
