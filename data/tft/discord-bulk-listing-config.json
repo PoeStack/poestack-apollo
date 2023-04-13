@@ -1,0 +1,198 @@
+{
+  "severId": "645607528297922560",
+  "bulkListingChannels": [
+    {
+      "channelId": "882580209444986920",
+      "listingType": "blood-filled vessels",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": true
+    },
+    {
+      "channelId": "939791301371654185",
+      "listingType": "compass",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": true
+    },
+    {
+      "channelId": "882251982830731315",
+      "listingType": "delirium orb",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "882247835188346951",
+      "listingType": "card",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "874662778592460851",
+      "listingType": "essence",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "868188612376809513",
+      "listingType": "logbook",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": true
+    },
+    {
+      "channelId": "906960098088341505",
+      "listingType": "fragment",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "973701260781969418",
+      "listingType": "heist",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": true
+    },
+    {
+      "channelId": "882247870143692800",
+      "listingType": "incubator",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "882600782199914496",
+      "listingType": "oil",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "874669036863094804",
+      "listingType": "scarab",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "874671016100659280",
+      "listingType": "fragment",
+      "listingSubType": "breachstones",
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "1049820243515678731",
+      "listingType": "fragment",
+      "listingSubType": "atizir",
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "1049820243515678731",
+      "listingType": "fragment",
+      "listingSubType": "uber atziri",
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "1049820243515678731",
+      "listingType": "fragment",
+      "listingSubType": "shaper",
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "1049820243515678731",
+      "listingType": "fragment",
+      "listingSubType": "elder",
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "1049820243515678731",
+      "listingType": "fragment",
+      "listingSubType": "uber elder",
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "1049820243515678731",
+      "listingType": "fragment",
+      "listingSubType": "elderslayer",
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "874662230979936257",
+      "listingType": "unidentified watcher's eyes",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "874663081400209499",
+      "listingType": "fossil",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "874663181258211358",
+      "listingType": "catalyst",
+      "listingSubType": null,
+      "league": "Crucible",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+
+    {
+      "channelId": "961952608757624842",
+      "listingType": "scarab",
+      "listingSubType": null,
+      "league": "Standard",
+      "rateLimitSeconds": 900,
+      "disableImages": false
+    },
+    {
+      "channelId": "945390356286038076",
+      "listingType": "compass",
+      "listingSubType": null,
+      "league": "Standard",
+      "rateLimitSeconds": 900,
+      "disableImages": true
+    },
+    {
+      "channelId": "961952547680161832",
+      "listingType": "heist",
+      "listingSubType": null,
+      "league": "Standard",
+      "rateLimitSeconds": 900,
+      "disableImages": true
+    }
+  ]
+}

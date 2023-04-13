@@ -1101,3 +1101,22 @@ export class GqlStashViewItemSummary {
   @Field({ nullable: true })
   totalValueChaos?: number;
 }
+
+@ObjectType("OneClickMessageHistory")
+export class GqlOneClickMessageHistory {
+  @Field()
+  messageId: string;
+  @Field()
+  channelId: string;
+  @Field()
+  userId: string;
+  @Field()
+  timestamp: Date;
+
+  @Field()
+  exportType: string;
+  @Field({ nullable: true })
+  exportSubType: string;
+  @Field()
+  rateLimitExpires: Date;
+}

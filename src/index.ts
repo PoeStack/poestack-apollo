@@ -21,6 +21,7 @@ import { InMemoryLRUCache } from "@apollo/utils.keyvaluecache";
 import { StashSnapshotResolver } from "./resolvers/stash-snapshot-resolver";
 import { UserResolver } from "./resolvers/user-resolver";
 import { PoeResolver } from "./resolvers/poe-resolver";
+import { TftOneClickResolver } from './resolvers/tft-one-click-resolver';
 import { ItemGroupResolver } from "./resolvers/item-group-resolver";
 import { ItemGroupValueTimeseriesResolver } from "./resolvers/item-group-value-timeseries-resolver";
 import { StashSnapshotExportResolver } from "./resolvers/stash-snapshot-export-resolver";
@@ -43,6 +44,9 @@ import ItemGroupingService from "./services/pricing/item-grouping-service";
 import ItemValueHistoryStreamService from "./services/pricing/item-value-history-stream-service";
 import CharacterVectorService from "./services/snapshot/character-vector-service";
 import StashViewService from "./services/stash-view/stash-view-service";
+import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
+import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
+import TftOneClickService from "./services/tft/tft-one-click-service";
 
 dotenv.config({ path: ".env.local" });
 
@@ -100,6 +104,7 @@ process
       CustomLadderGroupResolver,
       PublicStashResolver,
       StashViewResolver,
+      TftOneClickResolver
     ],
     validate: false,
     container: {
@@ -180,6 +185,12 @@ process
       .resolve(CharacterSnapshotService)
       .startAtlasAndPoeCharacterBackgroundJob();
     container.resolve(CharacterVectorService).startBackgroundJob();
+  }
+
+  if (process.env.START_ONE_CLICK_JOB === "true") {
+    await container.resolve(TftBlacklistService).pullBlacklist();
+    container.resolve(TftBlacklistService).startBlacklistUpdateTask();
+    container.resolve(TftDiscordBotService).start();
   }
 
   //await container.resolve(StashViewService).test();

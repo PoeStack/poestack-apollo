@@ -18,6 +18,7 @@
     "@types/lodash": "4.14.191",
     "@types/node": "18.11.18",
     "@types/object-hash": "3.0.2",
+    "discord.js": "14.9.0",
     "aws-sdk": "2.1311.0",
     "body-parser": "1.20.1",
     "class-validator": "0.14.0",

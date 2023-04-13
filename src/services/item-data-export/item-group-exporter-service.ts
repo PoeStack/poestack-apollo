@@ -22,6 +22,7 @@ import BloodFilledVialExporter from "./exporters/blood-filler-vial-exporter";
 import DiscordService from "../discord-service";
 import TftService from "../tft-service";
 import BeastExporter from "./exporters/beast-exporter";
+import TftOneClickService from "../../services/tft/tft-one-click-service";
 
 @singleton()
 export default class ItemGroupExporterService {
@@ -52,7 +53,8 @@ export default class ItemGroupExporterService {
     private readonly itemValueHistoryService: ItemValueHistoryService,
     private readonly postgresService: PostgresService,
     private readonly discordService: DiscordService,
-    private readonly tftService: TftService
+    private readonly tftService: TftService,
+    private readonly tftOneClickService: TftOneClickService
   ) {}
 
   public async exportItemData(
@@ -138,17 +140,19 @@ export default class ItemGroupExporterService {
     );
     const discordId = userProfile?.discordUserId;
     if (discordId) {
-      await this.tftService.postBulkListing(
-        userId,
-        discordId,
-        input.league,
-        input.exportType,
-        input.exportSubType,
-        exportedData.exportRaw,
-        `https://poestack.com/api/bulk-export/test?input=${encodeURIComponent(
+      await this.tftOneClickService.createBulkListing({
+        discordUserId: discordId,
+        poeAccountProfileName: userProfile.poeProfileName,
+        poeAccountId: userId,
+        league: input.league,
+        listingType: input.exportType,
+        listingSubType: input.exportSubType,
+        messageBody: exportedData.exportRaw,
+        imageUrl: `https://poestack.com/api/bulk-export/test?input=${encodeURIComponent(
           JSON.stringify(input)
-        )}`
-      );
+        )}`,
+        test: false,
+      });
     }
   }
 
