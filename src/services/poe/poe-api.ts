@@ -158,7 +158,8 @@ export default class PoeApi {
     stashTabIds: string[],
     league: string
   ): AsyncGenerator<PoeApiStashTab, void, void> {
-    for (const stashTabId of stashTabIds) {
+    const uniqStashTabIds = _.uniq(stashTabIds);
+    for (const stashTabId of uniqStashTabIds) {
       while (true) {
         const { data, rateLimitedForMs } = await this.fetchStashTab(
           bearerToken,

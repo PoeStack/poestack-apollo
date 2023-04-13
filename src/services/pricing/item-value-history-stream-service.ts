@@ -312,7 +312,7 @@ export default class ItemValueHistoryStreamService {
         .$queryRaw`
         select distinct "type" from "ItemGroupPValue" p
         right join "ItemGroupInfo" i on p."hashString" = i."hashString"
-        where "league" = ${league} and "updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '2 day'`;
+        where "league" = ${league} and p."updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '2 day'`;
 
       for (const type of tags.map((e) => e.type)) {
         const rows: any[] = await this.postgresService.prisma.$queryRaw`

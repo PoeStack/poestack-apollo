@@ -79,7 +79,14 @@ export default class HeistExporter implements ItemGroupExporter {
           0
         )} :chaos: all--`
       );
-      result += lines.join("\n");
+
+      const joinedLine = lines.join("\n");
+      if (
+        !exportedData?.input?.oneClickPost ||
+        result.length + joinedLine.length < 1880
+      ) {
+        result += joinedLine;
+      }
     }
 
     for (const contracts of contractGroups) {
@@ -103,7 +110,14 @@ export default class HeistExporter implements ItemGroupExporter {
           0
         )} :chaos: all--`
       );
-      result += lines.join("\n");
+
+      const joinedLine = lines.join("\n");
+      if (
+        !exportedData?.input?.oneClickPost ||
+        result.length + joinedLine.length < 1880
+      ) {
+        result += joinedLine;
+      }
     }
 
     return result;

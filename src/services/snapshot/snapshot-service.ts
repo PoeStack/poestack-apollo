@@ -332,7 +332,7 @@ export default class StashSnapshotService {
     sw.start("inject-values");
     await this.itemValueHistoryService.injectItemPValue(
       itemGroupSummaries,
-      input,
+      input
     );
     itemGroupSummaries.forEach(
       (i) => (snapshot.totalValueChaos += i.totalValueChaos)
