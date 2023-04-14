@@ -347,11 +347,11 @@ model StashViewSnapshotJob {
 model StashViewValueSnapshot {
   id String @id
 
-  timestamp DateTime
   userId    String
   league    String
   stashId   String
-
+  
+  timestamp DateTime
   value Float
 }
 

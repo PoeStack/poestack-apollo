@@ -1078,6 +1078,16 @@ export class GqlStashViewSnapshotInput {
   stashIds: string[];
 }
 
+@ObjectType("StashViewValueSnapshotSeries")
+export class GqlStashViewValueSnapshotSeries {
+  @Field()
+  stashId: string;
+  @Field(() => [Number])
+  values: number[];
+  @Field(() => [Date])
+  timestamps: Date[];
+}
+
 @ObjectType("StashViewJob")
 export class GqlStashViewJob {
   @Field()

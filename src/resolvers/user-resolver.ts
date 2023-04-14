@@ -30,15 +30,15 @@ export class UserResolver {
       where: { userId: ctx.userId },
     });
 
-    if (!forcePull) {
-      if (!resp.discordUserId) {
-        return false;
-      }
+    if (!resp.discordUserId) {
+      return false;
+    }
 
+    if (!forcePull) {
       if (
         resp.tftMemberUpdatedAtTimestamp &&
         new Date().getTime() - resp.tftMemberUpdatedAtTimestamp.getTime() <
-          1000 * 60 * 30
+          1000 * 60 * 5
       ) {
         return resp.tftMember === true;
       }
@@ -56,7 +56,7 @@ export class UserResolver {
       data: { tftMember: membership, tftMemberUpdatedAtTimestamp: new Date() },
     });
 
-    return true;
+    return !!membership;
   }
 
   @Mutation(() => Boolean)

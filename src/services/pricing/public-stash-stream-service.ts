@@ -101,6 +101,10 @@ export default class PublicStashStreamService {
             const group = this.itemGroupingService.findOrCreateItemGroup(item);
 
             if (group) {
+              if (group.key === "rogue's marker" && noteValue >= 1) {
+                continue;
+              }
+
               const summary = {
                 itemId: item.id,
                 itemGroupHashKey: group.key,
