@@ -1070,6 +1070,28 @@ export class GqlPublicStashUpdateRecordSearch {
   poeProfileNames: string[];
 }
 
+@InputType("StashViewSnapshotInput")
+export class GqlStashViewSnapshotInput {
+  @Field()
+  league: string;
+  @Field(() => [String])
+  stashIds: string[];
+}
+
+@ObjectType("StashViewJob")
+export class GqlStashViewJob {
+  @Field()
+  id: string;
+  @Field()
+  userId: string;
+  @Field()
+  status: string;
+  @Field()
+  totalStahes: number;
+  @Field()
+  timestamp: Date;
+}
+
 @ObjectType("StashViewItemSummary")
 export class GqlStashViewItemSummary {
   @Field()
@@ -1100,6 +1122,9 @@ export class GqlStashViewItemSummary {
   valueChaos?: number;
   @Field({ nullable: true })
   totalValueChaos?: number;
+
+  @Field({ nullable: true })
+  icon?: string;
 }
 
 @ObjectType("OneClickMessageHistory")

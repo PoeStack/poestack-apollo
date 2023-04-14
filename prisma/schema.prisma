@@ -334,10 +334,32 @@ model OneClickMessageHistory {
   rateLimitExpires DateTime
 }
 
+model StashViewSnapshotJob {
+  id String @id
+
+  timestamp DateTime
+  userId    String
+  status    String
+
+  totalStahes Int
+}
+
+model StashViewValueSnapshot {
+  id String @id
+
+  timestamp DateTime
+  userId    String
+  league    String
+  stashId   String
+
+  value Float
+}
+
 model StashViewItemSummary {
-  itemId  String @id
-  userId  String
-  league  String
+  itemId String @id
+  userId String
+  league String
+
   stashId String
 
   x        Int
@@ -348,4 +370,6 @@ model StashViewItemSummary {
 
   itemGroupHashString String?
   itemGroupTag        String?
+
+  icon String?
 }

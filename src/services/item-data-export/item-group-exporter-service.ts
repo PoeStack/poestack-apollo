@@ -20,7 +20,6 @@ import {
 import UnidWatchersEyeExporter from "./exporters/unid-watchers-eye-exporter";
 import BloodFilledVialExporter from "./exporters/blood-filler-vial-exporter";
 import DiscordService from "../discord-service";
-import TftService from "../tft-service";
 import BeastExporter from "./exporters/beast-exporter";
 import TftOneClickService from "../../services/tft/tft-one-click-service";
 
@@ -52,8 +51,6 @@ export default class ItemGroupExporterService {
     private readonly snapshotService: StashSnapshotService,
     private readonly itemValueHistoryService: ItemValueHistoryService,
     private readonly postgresService: PostgresService,
-    private readonly discordService: DiscordService,
-    private readonly tftService: TftService,
     private readonly tftOneClickService: TftOneClickService
   ) {}
 

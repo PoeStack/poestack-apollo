@@ -21,7 +21,7 @@ import { InMemoryLRUCache } from "@apollo/utils.keyvaluecache";
 import { StashSnapshotResolver } from "./resolvers/stash-snapshot-resolver";
 import { UserResolver } from "./resolvers/user-resolver";
 import { PoeResolver } from "./resolvers/poe-resolver";
-import { TftOneClickResolver } from './resolvers/tft-one-click-resolver';
+import { TftOneClickResolver } from "./resolvers/tft-one-click-resolver";
 import { ItemGroupResolver } from "./resolvers/item-group-resolver";
 import { ItemGroupValueTimeseriesResolver } from "./resolvers/item-group-value-timeseries-resolver";
 import { StashSnapshotExportResolver } from "./resolvers/stash-snapshot-export-resolver";
@@ -104,7 +104,7 @@ process
       CustomLadderGroupResolver,
       PublicStashResolver,
       StashViewResolver,
-      TftOneClickResolver
+      TftOneClickResolver,
     ],
     validate: false,
     container: {
@@ -163,10 +163,6 @@ process
 
   if (process.env.START_HISTORY_WRITES === "true") {
     container.resolve(ItemValueHistoryStreamService).startHistoryInserts();
-  }
-
-  if (process.env.START_AUTOMATIC_STASH_SNAPSHOTS === "true") {
-    container.resolve(StashSnapshotService).startAutomaticSnapshots();
   }
 
   if (process.env.START_POB === "true") {

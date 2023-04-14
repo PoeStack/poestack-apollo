@@ -6,9 +6,9 @@ import PostgresService from "../services/mongo/postgres-service";
 import { GqlUserProfile } from "../models/basic-models";
 import { PoeStackContext } from "..";
 import DiscordService from "../services/discord-service";
-import TftService from "../services/tft-service";
 import { Logger } from "../services/logger";
 import CharacterSnapshotService from "../services/snapshot/character-snapshot-service";
+import TftOneClickService from "../services/tft/tft-one-click-service";
 
 @Resolver()
 @singleton()
@@ -17,7 +17,7 @@ export class UserResolver {
     private readonly poeApi: PoeApi,
     private readonly postgresService: PostgresService,
     private readonly discordService: DiscordService,
-    private readonly tftService: TftService,
+    private readonly tftService: TftOneClickService,
     private readonly characterSnapshotService: CharacterSnapshotService
   ) {}
 
@@ -46,7 +46,7 @@ export class UserResolver {
 
     let membership = null;
     try {
-      membership = await this.tftService.checkTftMembership(resp.discordUserId);
+      membership = await this.tftService.checkUserIsMember(resp.discordUserId);
     } catch (error) {
       Logger.error("error pulling discord membership", error);
     }
