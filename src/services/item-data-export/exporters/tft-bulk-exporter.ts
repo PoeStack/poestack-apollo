@@ -42,7 +42,7 @@ PoeStack price: ${commonPricingData.totalValueChaos} :chaos: ( ${
       commonPricingData.totalValueDiv
     } :divine: ) at ratio [${divRatio}:chaos:/1:divine:]
 Asking price: ${commonPricingData.listedValueChaos} :chaos: (${
-      exportedData.input.listedValueMultiplier * 100
+      Math.round(exportedData.input.listedValueMultiplier * 100)
     }% of PoeStack price) ( ${
       commonPricingData.listedValueDiv
     } :divine:) at ratio [${divRatio}:chaos:/1:divine:] 

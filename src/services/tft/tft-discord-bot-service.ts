@@ -5,6 +5,7 @@ import {
   Client,
   Events,
   GatewayIntentBits,
+  GuildMember,
   Message,
   TextChannel,
 } from "discord.js";
@@ -15,7 +16,7 @@ export default class TftDiscordBotService {
   private client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
-/*       GatewayIntentBits.GuildMessages,
+      /*       GatewayIntentBits.GuildMessages,
       GatewayIntentBits.MessageContent, */
     ],
   });
@@ -27,7 +28,7 @@ export default class TftDiscordBotService {
     await this.client.login(process.env.DISCORD_POESTACK_BOT_TOKEN);
   }
 
-  public async checkUserIsMember(
+  public async checkUserForBadRoles(
     discordUserId: string,
     serverId: string
   ): Promise<boolean> {
@@ -37,16 +38,35 @@ export default class TftDiscordBotService {
         throw new Error(`Failed to fetch guild ${serverId}`);
       }
       const memberUser = await guild.members.fetch(discordUserId);
-      return !!memberUser;
+      const bad = memberUser.roles.cache.some((e) =>
+        ["Trade Restricted", "Muted"].includes(e.name)
+      );
+      return bad;
     } catch (error) {
       return false;
     }
   }
 
-  public async deleteMessage(
-    channelId: string,
-    messageId: string
-  ) {
+  public async fetchGuildMember(
+    discordUserId: string,
+    serverId: string,
+    force: boolean = false
+  ): Promise<GuildMember | null> {
+    try {
+      const guild = await this.client.guilds.fetch(serverId);
+      if (!guild) {
+        throw new Error(`Failed to fetch guild ${serverId}`);
+      }
+      const memberUser = await guild.members.fetch({
+        user: discordUserId,
+        force: force,
+      });
+      return memberUser;
+    } catch (error) {}
+    return null;
+  }
+
+  public async deleteMessage(channelId: string, messageId: string) {
     try {
       const channel = await this.client.channels.fetch(channelId);
       await (channel as TextChannel).messages.delete(messageId);

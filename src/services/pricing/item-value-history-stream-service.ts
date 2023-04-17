@@ -82,11 +82,11 @@ export default class ItemValueHistoryStreamService {
     }
   }
 
-  private async findListingLookbackWindow(
+  private async findListingLookbackWindowOld(
     itemGroup: ActiveItemGroup
   ): Promise<number | null> {
     let lookbackWindowHours = null;
-    for (const windowHours of [48, 36, 24, 12, 8, 6, 4, 2]) {
+    for (const windowHours of [24, 12, 8, 6, 4, 2]) {
       const interval = Prisma.raw(`'${windowHours} hour'`);
       const result = await this.postgresService.prisma.$queryRaw`
       select
@@ -115,40 +115,62 @@ export default class ItemValueHistoryStreamService {
     return lookbackWindowHours;
   }
 
-  private async writeHourlyItemGroupSummary(itemGroup: ActiveItemGroup) {
+  private findListingLookbackWindow(
+    listings: { q: number; p: number; t: Date }[]
+  ): number | null {
+    let lookbackWindowHours = null;
+
+    const now = new Date();
+    const allWindows = [24, 12, 8, 6, 4, 2];
+    for (const windowHours of allWindows) {
+      const filterTime = now.getTime() - 1000 * 60 * 60 * windowHours;
+      const listingCountInWindow = listings.reduce(
+        (p, c) => p + (c.t.getTime() >= filterTime ? 1 : 0),
+        0
+      );
+
+      if (
+        (windowHours === allWindows[0] && listingCountInWindow >= 5) ||
+        listingCountInWindow >= 45
+      ) {
+        lookbackWindowHours = windowHours;
+      } else {
+        break;
+      }
+    }
+
+    return lookbackWindowHours;
+  }
+
+  private async writeHourlyItemGroupSummary(activeItemGroup: ActiveItemGroup) {
     const sw = new StopWatch();
     sw.start("overall");
 
     sw.start("pull");
-    const lookbackWindowHours = await this.findListingLookbackWindow(itemGroup);
-    if (lookbackWindowHours !== null) {
-      const interval = Prisma.raw(`'${lookbackWindowHours} hour'`);
-      const lookbackCondition =
-        lookbackWindowHours === 48
-          ? Prisma.empty
-          : Prisma.sql`and "listedAtTimestamp" > now() at time zone 'utc' - INTERVAL ${interval}`;
-
-      const listings: { q: number; p: number }[] = await this.postgresService
-        .prisma.$queryRaw`
+    const listings: { q: number; p: number; t: Date }[] = await this
+      .postgresService.prisma.$queryRaw`
         select
           sum("stackSize") as q,
-          avg("listedValueChaos") as p
+          avg("listedValueChaos") as p,
+          max("listedAtTimestamp") as t
         from
           "PublicStashListing"
         where
-          "itemGroupHashString" = ${itemGroup.itemGroupHashString} and "league" = ${itemGroup.league} ${lookbackCondition}
+          "itemGroupHashString" = ${activeItemGroup.itemGroupHashString} and "league" = ${activeItemGroup.league}
         group by
           "accountName"`;
-      sw.stop("pull");
+    sw.stop("pull");
 
+    const lookbackWindowHours = this.findListingLookbackWindow(listings);
+    if (lookbackWindowHours) {
       const updatedAtEpochMs = Date.now();
       const hourlyEpochMs = updatedAtEpochMs - (updatedAtEpochMs % 3600000);
 
       const rangeStarts = [0, 9, 18, 30, 50, 100, 500, 1000, 10000, 30000];
       const itemGroupPValues = rangeStarts.flatMap((r) =>
         this.buildTimeSeriesEntries(listings, r).map(([type, value]) => ({
-          league: itemGroup.league,
-          hashString: itemGroup.itemGroupHashString,
+          league: activeItemGroup.league,
+          hashString: activeItemGroup.itemGroupHashString,
           type: type,
           value: Number(value),
           stockRangeStartInclusive: r,
@@ -160,7 +182,7 @@ export default class ItemValueHistoryStreamService {
       //TODO remove total quanity and total listings from the above make a seperate query for it to avoid lookback window affect
 
       const hourlyPValues = itemGroupPValues.map((e) => ({
-        league: itemGroup.league,
+        league: activeItemGroup.league,
         hashString: e.hashString,
         type: e.type,
         value: e.value,
@@ -177,7 +199,7 @@ export default class ItemValueHistoryStreamService {
                 hashString: p.hashString,
                 type: p.type.toString(),
                 stockRangeStartInclusive: p.stockRangeStartInclusive,
-                league: itemGroup.league,
+                league: activeItemGroup.league,
               },
             },
             update: p as any,
@@ -197,7 +219,7 @@ export default class ItemValueHistoryStreamService {
                   type: p.type.toString(),
                   stockRangeStartInclusive: p.stockRangeStartInclusive,
                   timestamp: p.timestamp,
-                  league: itemGroup.league,
+                  league: activeItemGroup.league,
                 },
               },
               update: p as any,
@@ -208,22 +230,24 @@ export default class ItemValueHistoryStreamService {
         await Promise.all(promises);
         sw.stop("write hourly p values");
       }
-
-      sw.stop("overall");
-      Logger.debug(
-        `evaluated ${listings.length} listings in ${sw.elapsedMS(
-          "overall"
-        )}ms [pull ${sw.elapsedMS("pull")}ms write ${sw.elapsedMS(
-          "write p values"
-        )}ms hourly ${sw.elapsedMS("write hourly p values")}ms]`
-      );
     }
+
+    sw.stop("overall");
+    Logger.debug(
+      `evaluated ${listings.length} listings in ${sw.elapsedMS(
+        "overall"
+      )}ms [pull ${sw.elapsedMS(
+        "pull"
+      )}ms write ${sw.elapsedMS("write p values")}ms hourly ${sw.elapsedMS(
+        "write hourly p values"
+      )}ms]`
+    );
   }
 
   private async runHourlyInsert(): Promise<number> {
     try {
       await this.postgresService.prisma.$executeRaw`
-      delete from "PublicStashListing" psl where "listedAtTimestamp" < now() at time zone 'utc' - INTERVAL '48 hour'`;
+      delete from "PublicStashListing" psl where "listedAtTimestamp" < now() at time zone 'utc' - INTERVAL '24 hour'`;
 
       const activeItemGroups: ActiveItemGroup[] =
         await this.fetchPublicStashActiveItemGroups();
@@ -280,7 +304,7 @@ export default class ItemValueHistoryStreamService {
           Logger.error("error in gc", e);
         }
 
-        await new Promise((res) => setTimeout(res, 60000));
+        await new Promise((res) => setTimeout(res, 1000 * 60));
 
         if (hourlyWrites % 2 === 0) {
           this.discordService.ping("starting daily history bulk write.");
@@ -290,8 +314,8 @@ export default class ItemValueHistoryStreamService {
           this.discordService.ping(
             `daily history bulk write ${sw.dump("daily")}.`
           );
-        } 
-        
+        }
+
         if (hourlyWrites % 2 === 0) {
           await this.uploadPriceDataToGithub();
         }

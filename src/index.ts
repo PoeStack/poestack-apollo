@@ -47,6 +47,7 @@ import StashViewService from "./services/stash-view/stash-view-service";
 import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
 import TftOneClickService from "./services/tft/tft-one-click-service";
+import PoeNinjaAuditService from "./services/pricing/poe-ninja-audit";
 
 dotenv.config({ path: ".env.local" });
 
@@ -191,9 +192,12 @@ process
 
   //await container.resolve(StashViewService).test();
 
-  /*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
+
+  await container.resolve(PoeNinjaAuditService).runAduit();
+
+  if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
     container.resolve(TwitchService).startStreamerJob();
-  } */
+  }
 
   container.resolve(DiscordService).start();
 })();

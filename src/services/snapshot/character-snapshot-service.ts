@@ -116,7 +116,7 @@ export default class CharacterSnapshotService {
   }
 
   public async startCharacterSnapshotBackgroundJob() {
-    const take = 2000;
+    const take = 500;
 
     for (;;) {
       try {

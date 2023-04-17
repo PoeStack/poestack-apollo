@@ -20,7 +20,8 @@ export default class ItemValueHistoryService {
 
   public async fetchFirstPValueByItemGroupHashKey(
     league: string,
-    itemGroupHashKey: string
+    itemGroupHashKey: string,
+    targetPValue: string = "p10"
   ): Promise<number | null> {
     const cacheKey = `${league}__${itemGroupHashKey}`;
     const cacheValue: number = this.pValueCache.get(cacheKey);
@@ -38,7 +39,7 @@ export default class ItemValueHistoryService {
       await this.postgresService.prisma.itemGroupPValue.findFirst({
         where: {
           hashString: itemGroup?.hashString,
-          type: "p10",
+          type: targetPValue,
           league: league,
         },
       });
@@ -77,8 +78,9 @@ export default class ItemValueHistoryService {
   ) {
     const itemsWithItemGroup = items.filter((e) => !!e.itemGroupHashString);
 
-    const allItemGroupHashStrings = itemsWithItemGroup
-      .map((i) => i.itemGroupHashString);
+    const allItemGroupHashStrings = itemsWithItemGroup.map(
+      (i) => i.itemGroupHashString
+    );
 
     const pValueTarget = options?.valuationTargetPValue ?? "p10";
     const itemGroupPValues =

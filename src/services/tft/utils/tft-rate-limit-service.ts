@@ -4,7 +4,7 @@ import { singleton } from "tsyringe";
 export default class TftRateLimitService {
   private rateLimitCache = {};
 
-  public async fetchLimit(resource: string, accessKey: string) {
+  public async fetchLimitMs(resource: string, accessKey: string) {
     const resourceLimitTimestamp: number =
       this.rateLimitCache[`${resource}__${accessKey}`];
     if (!resourceLimitTimestamp) {

@@ -37,35 +37,6 @@ export default class PublicStashStreamService {
     return result;
   }
 
-  private computeAllCruciblePaths(item: any): number[][] {
-    const nodeMap: Record<string, any> = item.crucible?.["nodes"];
-    const allNodes = Object.values(nodeMap);
-    const endOrbit = _.max(allNodes.map((e) => e.orbit));
-    const startingNodes = Object.values(nodeMap).filter(
-      (e) => e.orbit === endOrbit
-    );
-
-    const allPaths: number[][] = [];
-    for (const startingNode of startingNodes) {
-      const queue = [{ node: startingNode, paths: [] }];
-      while (queue.length) {
-        const current = queue.shift();
-        current.paths.push(current.node);
-
-        if (current.node.orbit === 0) {
-          allPaths.push(current.paths.map((e) => e.skill).reverse());
-        }
-
-        for (const n of current.node.in) {
-          const paths = _.cloneDeep(current.paths);
-          queue.push({ node: nodeMap[n], paths: paths });
-        }
-      }
-    }
-
-    return allPaths;
-  }
-
   private async updatePublicListingSummaries(
     response: PoeApiPublicStashResponse
   ) {
@@ -169,7 +140,7 @@ export default class PublicStashStreamService {
         if (this.updateQueue.length > 0) {
           const toWrite = this.updateQueue.shift();
 
-          await this.updateStashListingRecords(toWrite);
+          //await this.updateStashListingRecords(toWrite);
           await this.updatePublicListingSummaries(toWrite);
 
           await this.postgresService.prisma.genericParam.upsert({
@@ -266,7 +237,6 @@ export default class PublicStashStreamService {
           where: { publicStashId: { in: chunk } },
         });
       }
-
       sw.stop("delete");
 
       sw.start("write");

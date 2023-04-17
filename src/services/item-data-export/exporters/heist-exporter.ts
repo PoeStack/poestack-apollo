@@ -114,7 +114,7 @@ export default class HeistExporter implements ItemGroupExporter {
       const joinedLine = lines.join("\n");
       if (
         !exportedData?.input?.oneClickPost ||
-        result.length + joinedLine.length < 1880
+        result.length + joinedLine.length < 1700
       ) {
         result += joinedLine;
       }

@@ -114,11 +114,11 @@ export default class ItemGroupExporterService {
     }
     exportedData.exportRaw = allRaw;
 
-    if (
-      userId === stashSnapshot.userId &&
-      input.oneClickPost &&
-      input.ign?.length > 3
-    ) {
+    if (userId === stashSnapshot.userId && input.oneClickPost) {
+      if (input.ign?.length <= 3) {
+        throw new Error("Must include IGN.");
+      }
+
       await this.handleOneClick(userId, input, exportedData);
     }
 

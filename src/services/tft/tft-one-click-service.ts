@@ -24,10 +24,12 @@ export default class TftOneClickService {
   }
 
   public async checkUserIsMember(discordId: string): Promise<boolean> {
-    return await this.discordService.checkUserIsMember(
+    const user = await this.discordService.fetchGuildMember(
       discordId,
-      this.config.severId
+      this.config.severId,
+      true
     );
+    return !!user;
   }
 
   public async createBulkListing(bulkListing: TftBulkListing): Promise<{
@@ -42,12 +44,14 @@ export default class TftOneClickService {
     assert(!!bulkListing.messageBody);
 
     const rateLimitKey = `create-bulk-listing_${bulkListing.listingType}_${bulkListing.listingSubType}`;
-    const retryAfterSeconds = await this.rateLimitService.fetchLimit(
+    const retryAfterMs = await this.rateLimitService.fetchLimitMs(
       rateLimitKey,
       bulkListing.discordUserId
     );
-    if (retryAfterSeconds > 0) {
-      return { sucess: false, rateLimitedForSeconds: retryAfterSeconds };
+    if (retryAfterMs > 0) {
+      throw new Error(
+        `Cooldown active try again in ${Math.round(retryAfterMs / 1000)} seconds.`
+      );
     }
     await this.rateLimitService.updateLimit(
       rateLimitKey,
@@ -82,13 +86,30 @@ export default class TftOneClickService {
       );
     }
 
-    const userIsMember = await this.discordService.checkUserIsMember(
+    const memberUser = await this.discordService.fetchGuildMember(
       bulkListing.discordUserId,
-      this.config.severId
+      this.config.severId,
+      true
     );
-    if (!userIsMember) {
+    if (!memberUser) {
       throw new Error(
         `User ${bulkListing.discordUserId} is not a member of the server`
+      );
+    }
+
+    const userHasBadRoles = memberUser.roles.cache.some((e) =>
+      ["Trade Restricted", "Muted"].includes(e.name)
+    );
+    if (userHasBadRoles) {
+      throw new Error(`User ${bulkListing.discordUserId} is trade restricted`);
+    }
+
+    if (
+      targetChannel.channelId === "874662778592460851" &&
+      !memberUser.roles.cache.some((e) => e.id === "848751148478758914")
+    ) {
+      throw new Error(
+        `User ${bulkListing.discordUserId} must have their poe account linked to TFT to access this channel. Read more (https://discord.com/channels/645607528297922560/665132391983218694/1096931567236022352)`
       );
     }
 
@@ -120,7 +141,7 @@ export default class TftOneClickService {
     await this.rateLimitService.updateLimit(
       rateLimitKey,
       bulkListing.discordUserId,
-      targetChannel.rateLimitSeconds
+      targetChannel.rateLimitSeconds ?? 900
     );
 
     return {

@@ -174,7 +174,7 @@ export default class PobService {
     const completeFilePath = `${this.pobPath}/data/${jobId}_complete.txt`;
 
     let attempt = 0;
-    while (attempt < 150 && !fs.existsSync(completeFilePath)) {
+    while (attempt < 100 && !fs.existsSync(completeFilePath)) {
       console.log("waiting for pob");
       await new Promise((res) => setTimeout(res, 100));
       attempt++;
