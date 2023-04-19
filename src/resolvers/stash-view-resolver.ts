@@ -2,6 +2,7 @@ import {
   GqlStashViewItemSummary,
   GqlStashViewJob,
   GqlStashViewSnapshotInput,
+  GqlStashViewStashSummary,
   GqlStashViewValueSnapshotSeries,
 } from "./../models/basic-models";
 import { PoeStackContext } from "./../index";
@@ -71,12 +72,12 @@ export class StashViewResolver {
     return job;
   }
 
-  @Query(() => [GqlStashViewItemSummary])
-  async stashViewSummary(
+  @Query(() => GqlStashViewStashSummary)
+  async stashViewStashSummary(
     @Ctx() ctx: PoeStackContext,
     @Arg("league") league: string
   ) {
-    const items = await this.stashViewService.fetchItemSummaries(
+    const items = await this.stashViewService.fetchStashViewTabSummary(
       ctx.userId,
       league
     );

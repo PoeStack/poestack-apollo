@@ -140,7 +140,7 @@ export default class PublicStashStreamService {
         if (this.updateQueue.length > 0) {
           const toWrite = this.updateQueue.shift();
 
-          //await this.updateStashListingRecords(toWrite);
+          await this.updateStashListingRecords(toWrite);
           await this.updatePublicListingSummaries(toWrite);
 
           await this.postgresService.prisma.genericParam.upsert({

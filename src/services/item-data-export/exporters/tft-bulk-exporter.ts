@@ -41,12 +41,23 @@ IGN: ${exportedData.input.ign}
 PoeStack price: ${commonPricingData.totalValueChaos} :chaos: ( ${
       commonPricingData.totalValueDiv
     } :divine: ) at ratio [${divRatio}:chaos:/1:divine:]
-Asking price: ${commonPricingData.listedValueChaos} :chaos: (${
-      Math.round(exportedData.input.listedValueMultiplier * 100)
-    }% of PoeStack price) ( ${
+Asking price: ${commonPricingData.listedValueChaos} :chaos: (${Math.round(
+      exportedData.input.listedValueMultiplier * 100
+    )}% of PoeStack price) ( ${
       commonPricingData.listedValueDiv
     } :divine:) at ratio [${divRatio}:chaos:/1:divine:] 
-Most valuable: ${mostValuable}`;
+Most valuable: ${this.capitalize(mostValuable)}`;
+  }
+
+  capitalize(str: string | undefined | null): string | undefined | null {
+    if (!str) return str;
+
+    return str
+      ?.split(" ")
+      .map((w) => {
+        return w[0].toUpperCase() + w.slice(1);
+      })
+      .join(" ");
   }
 
   async toRawLine(

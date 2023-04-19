@@ -166,18 +166,26 @@ export default class ItemValueHistoryStreamService {
       const updatedAtEpochMs = Date.now();
       const hourlyEpochMs = updatedAtEpochMs - (updatedAtEpochMs % 3600000);
 
+      const itemGroupPValues = [];
       const rangeStarts = [0, 9, 18, 30, 50, 100, 500, 1000, 10000, 30000];
-      const itemGroupPValues = rangeStarts.flatMap((r) =>
-        this.buildTimeSeriesEntries(listings, r).map(([type, value]) => ({
+      let lastPValueGroup = null;
+      for (const rangeStart of rangeStarts) {
+        const pValues = this.buildTimeSeriesEntries(
+          listings,
+          rangeStart,
+          lastPValueGroup
+        ).map(([type, value]) => ({
           league: activeItemGroup.league,
           hashString: activeItemGroup.itemGroupHashString,
           type: type,
           value: Number(value),
-          stockRangeStartInclusive: r,
+          stockRangeStartInclusive: rangeStart,
           updatedAtTimestamp: new Date(updatedAtEpochMs),
           lookbackWindowUsedHours: lookbackWindowHours,
-        }))
-      );
+        }));
+        lastPValueGroup = pValues;
+        itemGroupPValues.push(...pValues);
+      }
 
       //TODO remove total quanity and total listings from the above make a seperate query for it to avoid lookback window affect
 
@@ -236,11 +244,9 @@ export default class ItemValueHistoryStreamService {
     Logger.debug(
       `evaluated ${listings.length} listings in ${sw.elapsedMS(
         "overall"
-      )}ms [pull ${sw.elapsedMS(
-        "pull"
-      )}ms write ${sw.elapsedMS("write p values")}ms hourly ${sw.elapsedMS(
-        "write hourly p values"
-      )}ms]`
+      )}ms [pull ${sw.elapsedMS("pull")}ms write ${sw.elapsedMS(
+        "write p values"
+      )}ms hourly ${sw.elapsedMS("write hourly p values")}ms]`
     );
   }
 
@@ -368,7 +374,8 @@ export default class ItemValueHistoryStreamService {
 
   private buildTimeSeriesEntries(
     allListings: Array<{ p: number; q: number }>,
-    minStackSize = 0
+    minStackSize = 0,
+    lastPValues: { type: string; value: number }[] | null
   ): Array<Array<string | number>> {
     const allValues = allListings
       .filter((l) => {
@@ -391,6 +398,17 @@ export default class ItemValueHistoryStreamService {
       ["p20", MathUtils.q(filteredChaosValues, 0.2)],
       ["p50", MathUtils.q(filteredChaosValues, 0.5)],
     ].filter((e) => e[1] !== undefined);
+
+    if (lastPValues) {
+      for (const res of results) {
+        if ((res[0] as string).startsWith("p")) {
+          const lastPValue = lastPValues?.find((e) => e.type === res[0]);
+          if (lastPValue) {
+            res[1] = Math.max(lastPValue.value, res[1] as number);
+          }
+        }
+      }
+    }
 
     return results;
   }

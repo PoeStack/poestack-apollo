@@ -192,8 +192,7 @@ process
 
   //await container.resolve(StashViewService).test();
 
-
-  await container.resolve(PoeNinjaAuditService).runAduit();
+ // await container.resolve(PoeNinjaAuditService).runAduit();
 
   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
     container.resolve(TwitchService).startStreamerJob();

@@ -1,16 +1,17 @@
 import { Logger } from "./../logger";
-import { PoeApiStashTab } from "@gql/resolvers-types";
 import PostgresService from "../mongo/postgres-service";
 import PoeApi from "../poe/poe-api";
 import { S3Service } from "./../s3-service";
 import { UserService } from "./../user-service";
 
 import { singleton } from "tsyringe";
-import NodeCache from "node-cache";
 import { StashViewItemSummary } from "@prisma/client";
 import ItemGroupingService from "../pricing/item-grouping-service";
 import ItemValueHistoryService from "../pricing/item-value-history-service";
-import { GqlStashViewItemSummary } from "../../models/basic-models";
+import {
+  GqlItemGroup,
+  GqlStashViewStashSummary,
+} from "../../models/basic-models";
 import { nanoid } from "nanoid";
 import _ from "lodash";
 
@@ -24,6 +25,19 @@ export default class StashViewService {
     private readonly itemGroupingService: ItemGroupingService,
     private readonly itemValueHistoryService: ItemValueHistoryService
   ) {}
+
+  public async test() {
+    const users = await this.postgresService.prisma.userProfile.findMany({
+      where: { opaqueKey: "NA" },
+      select: { userId: true },
+    });
+    for (const user of users) {
+      await this.postgresService.prisma.userProfile.update({
+        where: { userId: user.userId },
+        data: { opaqueKey: nanoid() },
+      });
+    }
+  }
 
   public async updateTabsInternal(
     jobId: string,
@@ -96,6 +110,9 @@ export default class StashViewService {
                   .filter((e) => !!e)
                   .join(" ");
 
+            const splitIcon = item.icon
+              ?.replace("https://web.poecdn.com/gen/image/", "")
+              ?.split("/");
             const summary: StashViewItemSummary = {
               itemId: item.id,
               userId: userId,
@@ -108,7 +125,23 @@ export default class StashViewService {
               itemGroupHashString: group?.hashString,
               itemGroupTag: group?.tag,
               icon: item.icon,
+              category: [],
+              iconId: splitIcon?.[1],
             };
+
+            if (item.icon) {
+              const data = JSON.parse(
+                Buffer.from(
+                  item.icon
+                    .replace("https://web.poecdn.com/gen/image/", "")
+                    .split("/")[0],
+                  "base64"
+                ).toString()
+              );
+
+              summary.category = data[2].f.split("/");
+            }
+
             itemSummariesToWrite.push(summary);
           }
 
@@ -191,39 +224,30 @@ export default class StashViewService {
     return jobId;
   }
 
-  public async fetchItemSummaries(
+  public async fetchStashViewTabSummary(
     userId: string,
     league: string
-  ): Promise<GqlStashViewItemSummary[]> {
+  ): Promise<GqlStashViewStashSummary> {
     const items =
       await this.postgresService.prisma.stashViewItemSummary.findMany({
         where: { userId: userId, league: league },
       });
-
     await this.itemValueHistoryService.injectItemPValue(items, {
       league: league,
       valuationStockInfluence: "smart-influnce",
       valuationTargetPValue: "p10",
     });
 
-    return items;
-  }
-
-  public async test() {
-    const userId = "d3d595b6-6982-48f9-9358-048292beb8a7";
-    const league = "Crucible";
-
-    const tabs = await this.postgresService.prisma.poeStashTab.findMany({
-      where: { userId: userId, league: league },
-      select: { type: true, id: true },
-    });
-
-    await this.takeSnapshot(
-      userId,
-      league,
-      tabs.map((e) => e.id)
+    const uniqItemGroupIds = _.uniq(
+      items.map((e) => e.itemGroupHashString)
+    ).filter((e) => !!e);
+    const itemGroups = await this.postgresService.prisma.itemGroupInfo.findMany(
+      { where: { hashString: { in: uniqItemGroupIds } } }
     );
 
-    Logger.info("asdasd");
+    return {
+      items: items,
+      itemGroups: itemGroups as unknown as GqlItemGroup[],
+    };
   }
 }

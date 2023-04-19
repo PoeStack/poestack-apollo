@@ -13,6 +13,7 @@ import { singleton } from "tsyringe";
 import { Logger } from "../logger";
 import PostgresService from "../mongo/postgres-service";
 import DiscordService from "../discord-service";
+import { GqlPoeLeague } from "models/poe-models";
 
 @singleton()
 export default class PoeApi {
@@ -86,6 +87,14 @@ export default class PoeApi {
     const url = "/character";
     const { data, rateLimitedForMs } = await this.fetch(url, bearerToken, {});
     return { data: data?.characters, rateLimitedForMs };
+  }
+
+  public async fetchLeagues(
+    bearerToken: string
+  ): Promise<{ data: GqlPoeLeague[]; rateLimitedForMs: number }> {
+    const url = "/league";
+    const { data, rateLimitedForMs } = await this.fetch(url, bearerToken, {});
+    return { data: data?.leagues, rateLimitedForMs };
   }
 
   public async fetchCharacter(

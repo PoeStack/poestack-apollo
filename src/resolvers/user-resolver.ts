@@ -9,6 +9,8 @@ import DiscordService from "../services/discord-service";
 import { Logger } from "../services/logger";
 import CharacterSnapshotService from "../services/snapshot/character-snapshot-service";
 import TftOneClickService from "../services/tft/tft-one-click-service";
+import { UserProfile } from "@prisma/client";
+import { nanoid } from "nanoid";
 
 @Resolver()
 @singleton()
@@ -113,13 +115,18 @@ export class UserResolver {
       throw new Error("Failed to fetch poe profile.");
     }
 
-    const userProfile = {
-      userId,
+    const userProfile: UserProfile = {
+      userId: userId,
       poeProfileName: poeProfile.name,
       createdAtTimestamp: new Date(),
       lastConnectedTimestamp: new Date(),
       oAuthToken: accessToken,
       oAuthTokenUpdatedAtTimestamp: new Date(),
+      discordUserId: null,
+      discordUserIdUpdatedAtTimestamp: null,
+      tftMember: null,
+      tftMemberUpdatedAtTimestamp: null,
+      opaqueKey: nanoid(),
     };
 
     await this.postgresService.prisma.userProfile.upsert({

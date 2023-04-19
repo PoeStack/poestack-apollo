@@ -89,16 +89,18 @@ model PublicStashListing {
 }
 
 model UserProfile {
-  userId                              String                                @id
-  poeProfileName                      String
-  createdAtTimestamp                  DateTime                              @default(now())
-  lastConnectedTimestamp              DateTime                              @default(now())
-  oAuthToken                          String?
-  oAuthTokenUpdatedAtTimestamp        DateTime
-  discordUserId                       String?
-  discordUserIdUpdatedAtTimestamp     DateTime?
-  tftMember                           Boolean?
-  tftMemberUpdatedAtTimestamp         DateTime?
+  userId                          String    @id
+  opaqueKey                       String    @unique
+  poeProfileName                  String
+  createdAtTimestamp              DateTime  @default(now())
+  lastConnectedTimestamp          DateTime  @default(now())
+  oAuthToken                      String?
+  oAuthTokenUpdatedAtTimestamp    DateTime
+  discordUserId                   String?
+  discordUserIdUpdatedAtTimestamp DateTime?
+  tftMember                       Boolean?
+  tftMemberUpdatedAtTimestamp     DateTime?
+
   CustomLadderGroup                   CustomLadderGroup[]
   PoeCharacter                        PoeCharacter[]
   PoeStashTab                         PoeStashTab[]
@@ -347,16 +349,16 @@ model StashViewSnapshotJob {
 model StashViewValueSnapshot {
   id String @id
 
-  userId    String
-  league    String
-  stashId   String
-  
+  userId  String
+  league  String
+  stashId String
+
   timestamp DateTime
-  value Float
+  value     Float
 }
 
 model StashViewItemSummary {
-  itemId String @id
+  itemId String
   userId String
   league String
 
@@ -372,4 +374,11 @@ model StashViewItemSummary {
   itemGroupTag        String?
 
   icon String?
+
+  iconId   String?
+  category String[]
+
+  @@id([userId, stashId, x, y])
+  @@index([userId])
+  @@index([league])
 }

@@ -5,6 +5,8 @@ import { PoeStackContext } from "..";
 import { GqlGenericAggregation, GqlPoeStashTab } from "../models/basic-models";
 import { PoeService } from "../services/poe/poe-service";
 import { UserService } from "../services/user-service";
+import PoeApi from "../services/poe/poe-api";
+import { GqlPoeLeague } from "../models/poe-models";
 
 @Resolver()
 @singleton()
@@ -12,6 +14,7 @@ export class PoeResolver {
   constructor(
     private readonly postgresService: PostgresService,
     private readonly poeService: PoeService,
+    private readonly poeApi: PoeApi,
     private readonly userService: UserService
   ) {}
 
@@ -22,6 +25,13 @@ export class PoeResolver {
       where "lookbackWindowHours" = 1
       order by "timestamp" asc`;
     return { values: rows };
+  }
+
+  @Query(() => [GqlPoeLeague])
+  async leagues(@Ctx() ctx: PoeStackContext) {
+    const token = await this.userService.fetchUserOAuthTokenSafe(ctx.userId);
+    const { data } = await this.poeApi.fetchLeagues(token);
+    return data;
   }
 
   @Query(() => [GqlPoeStashTab])

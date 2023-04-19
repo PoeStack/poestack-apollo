@@ -1102,6 +1102,15 @@ export class GqlStashViewJob {
   timestamp: Date;
 }
 
+@ObjectType("StashViewStashSummary")
+export class GqlStashViewStashSummary {
+  @Field(() => [GqlStashViewItemSummary])
+  items: GqlStashViewItemSummary[];
+
+  @Field(() => [GqlItemGroup])
+  itemGroups: GqlItemGroup[];
+}
+
 @ObjectType("StashViewItemSummary")
 export class GqlStashViewItemSummary {
   @Field()

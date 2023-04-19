@@ -17,7 +17,7 @@ export default class PoeNinjaAuditService {
     );
     const body = await resp.json();
     let out = ['name,poeninja,poestack'];
-    const pValueTarget = "p20";
+    const pValueTarget = "p10";
     for (const line of body.lines) {
       const pValue =
         await this.itemValueHistoryService.fetchFirstPValueByItemGroupHashKey(
