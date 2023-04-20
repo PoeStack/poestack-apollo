@@ -1102,6 +1102,18 @@ export class GqlStashViewJob {
   timestamp: Date;
 }
 
+@InputType("StashViewStashSummarySearch")
+export class GqlStashViewStashSummarySearch {
+  @Field()
+  league: string;
+
+  @Field({ nullable: true, defaultValue: null })
+  opaqueKey?: string;
+
+  @Field({ nullable: true, defaultValue: null })
+  execludeNonItemGroups?: boolean;
+}
+
 @ObjectType("StashViewStashSummary")
 export class GqlStashViewStashSummary {
   @Field(() => [GqlStashViewItemSummary])
@@ -1146,6 +1158,43 @@ export class GqlStashViewItemSummary {
   icon?: string;
 }
 
+@InputType("StashViewSettings")
+export class GqlStashViewSettings {
+  @Field()
+  league: string;
+  @Field()
+  chaosToDivRate: number;
+
+  @Field({ nullable: true })
+  searchString: string;
+  @Field()
+  filterCheckedTabs: boolean;
+
+  @Field({ nullable: true })
+  selectedTabId: string;
+  @Field(() => [String])
+  checkedTabIds: string[];
+  @Field(() => [String], { nullable: true })
+  checkedTags: string[];
+
+  @Field()
+  valueOverridesEnabled: boolean;
+  @Field(() => GraphQLJSONObject)
+  itemGroupValueOverrides: Record<string, number>;
+
+  @Field()
+  selectedExporter: string;
+  @Field()
+  exporterListedValueMultipler: number;
+
+  @Field({ nullable: true })
+  ign: string;
+  @Field({ nullable: true })
+  tftSelectedCategory: string;
+  @Field({ nullable: true })
+  tftSelectedSubCategory: string;
+}
+
 @ObjectType("OneClickMessageHistory")
 export class GqlOneClickMessageHistory {
   @Field()
@@ -1163,4 +1212,20 @@ export class GqlOneClickMessageHistory {
   exportSubType: string;
   @Field()
   rateLimitExpires: Date;
+}
+
+@ObjectType("ItemGroupListing")
+export class GqlItemGroupListing {
+  @Field()
+  itemGroupHashString: string;
+
+  @Field()
+  accountName: string;
+
+  @Field()
+  listedAtTimestamp: Date;
+  @Field()
+  stackSize: number;
+  @Field()
+  listedValueChaos: number;
 }

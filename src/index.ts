@@ -59,8 +59,8 @@ process
   .on("unhandledRejection", (reason, p) => {
     container
       .resolve(DiscordService)
-      .ping(`Unhandled Rejection at Promise : ${p}`);
-    console.error(reason, "Unhandled Rejection at Promise", p);
+      .ping(`Unhandled Rejection at Promise : ${reason}`);
+    console.error(reason, "Unhandled Rejection at Promise", reason);
   })
   .on("uncaughtException", (err) => {
     container
@@ -194,9 +194,9 @@ process
 
  // await container.resolve(PoeNinjaAuditService).runAduit();
 
-  if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
+/*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
     container.resolve(TwitchService).startStreamerJob();
-  }
+  } */
 
   container.resolve(DiscordService).start();
 })();

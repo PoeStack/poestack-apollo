@@ -2,7 +2,9 @@ import { singleton } from "tsyringe";
 import PostgresService from "../mongo/postgres-service";
 import { Logger } from "../logger";
 import {
+  AttachmentBuilder,
   Client,
+  EmbedBuilder,
   Events,
   GatewayIntentBits,
   GuildMember,
@@ -13,7 +15,7 @@ import fetch from "node-fetch";
 
 @singleton()
 export default class TftDiscordBotService {
-  private client = new Client({
+  public client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
       /*       GatewayIntentBits.GuildMessages,
@@ -102,4 +104,5 @@ export default class TftDiscordBotService {
     const resp = await (channel as TextChannel).send(message);
     return resp;
   }
+
 }

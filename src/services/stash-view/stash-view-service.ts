@@ -1,3 +1,6 @@
+import { STASH_VIEW_TFT_CATEGORIES } from "./stash-view-tft-categories";
+
+import { StashViewExporters } from "./stash-view-exporters";
 import { Logger } from "./../logger";
 import PostgresService from "../mongo/postgres-service";
 import PoeApi from "../poe/poe-api";
@@ -10,10 +13,13 @@ import ItemGroupingService from "../pricing/item-grouping-service";
 import ItemValueHistoryService from "../pricing/item-value-history-service";
 import {
   GqlItemGroup,
+  GqlStashViewSettings,
   GqlStashViewStashSummary,
+  GqlStashViewStashSummarySearch,
 } from "../../models/basic-models";
 import { nanoid } from "nanoid";
 import _ from "lodash";
+import TftOneClickService from "../../services/tft/tft-one-click-service";
 
 @singleton()
 export default class StashViewService {
@@ -23,7 +29,8 @@ export default class StashViewService {
     private readonly userService: UserService,
     private readonly s3Service: S3Service,
     private readonly itemGroupingService: ItemGroupingService,
-    private readonly itemValueHistoryService: ItemValueHistoryService
+    private readonly itemValueHistoryService: ItemValueHistoryService,
+    private readonly tftOneClickService: TftOneClickService
   ) {}
 
   public async test() {
@@ -224,16 +231,53 @@ export default class StashViewService {
     return jobId;
   }
 
+  public async oneClickPost(userId: string, input: GqlStashViewSettings) {
+    input.selectedExporter = "TFT-Bulk";
+    const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
+    input.checkedTags = tftCategory!.tags;
+
+    const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
+      { where: { userId: userId } }
+    );
+
+    const summary = await this.fetchStashViewTabSummary(userId, {
+      league: input.league,
+    });
+
+    const listingBody: string = tftCategory.export(summary, null, input);
+
+    const targetChannel = tftCategory.channels[input.league];
+    await this.tftOneClickService.createBulkListing2(
+      targetChannel.channelId,
+      targetChannel.timeout,
+      {
+        discordUserId: user.discordUserId,
+        poeAccountProfileName: user.poeProfileName,
+        poeAccountId: user.userId,
+        league: input.league,
+        messageBody: listingBody,
+        imageUrl: !targetChannel.disableImages
+          ? `https://poestack.com/api/stash-view/tft-export-image?input=${encodeURIComponent(
+              JSON.stringify(input)
+            )}`
+          : null,
+        test: false,
+      }
+    );
+
+    return listingBody;
+  }
+
   public async fetchStashViewTabSummary(
-    userId: string,
-    league: string
+    appliedUserId: string,
+    search: GqlStashViewStashSummarySearch
   ): Promise<GqlStashViewStashSummary> {
     const items =
       await this.postgresService.prisma.stashViewItemSummary.findMany({
-        where: { userId: userId, league: league },
+        where: { userId: appliedUserId, league: search.league },
       });
     await this.itemValueHistoryService.injectItemPValue(items, {
-      league: league,
+      league: search.league,
       valuationStockInfluence: "smart-influnce",
       valuationTargetPValue: "p10",
     });

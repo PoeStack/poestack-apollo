@@ -1,8 +1,10 @@
 import {
   GqlStashViewItemSummary,
   GqlStashViewJob,
+  GqlStashViewSettings,
   GqlStashViewSnapshotInput,
   GqlStashViewStashSummary,
+  GqlStashViewStashSummarySearch,
   GqlStashViewValueSnapshotSeries,
 } from "./../models/basic-models";
 import { PoeStackContext } from "./../index";
@@ -32,6 +34,15 @@ export class StashViewResolver {
       input.stashIds
     );
     return jobId;
+  }
+
+  @Mutation(() => Boolean)
+  async stashViewOneClickPost(
+    @Arg("input") input: GqlStashViewSettings,
+    @Ctx() ctx: PoeStackContext
+  ) {
+    await this.stashViewService.oneClickPost(ctx.userId, input);
+    return true;
   }
 
   @Query(() => [GqlStashViewValueSnapshotSeries])
@@ -75,11 +86,20 @@ export class StashViewResolver {
   @Query(() => GqlStashViewStashSummary)
   async stashViewStashSummary(
     @Ctx() ctx: PoeStackContext,
-    @Arg("league") league: string
+    @Arg("search") search: GqlStashViewStashSummarySearch
   ) {
+    let userId = ctx.userId;
+    if (search.opaqueKey) {
+      const user =
+        await this.postgresService.prisma.userProfile.findFirstOrThrow({
+          where: { opaqueKey: search.opaqueKey },
+        });
+      userId = user.userId;
+    }
+
     const items = await this.stashViewService.fetchStashViewTabSummary(
-      ctx.userId,
-      league
+      userId,
+      search
     );
     return items;
   }

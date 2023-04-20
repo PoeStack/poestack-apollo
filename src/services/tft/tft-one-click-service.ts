@@ -32,6 +32,103 @@ export default class TftOneClickService {
     return !!user;
   }
 
+  public async createBulkListing2(
+    targetChannelId: string,
+    cooldown: number,
+    bulkListing: TftBulkListing2
+  ): Promise<{
+    sucess: boolean;
+    rateLimitedForSeconds: number;
+  }> {
+    assert(!!bulkListing);
+    assert(!!bulkListing.discordUserId);
+    assert(!!bulkListing.poeAccountId);
+    assert(!!bulkListing.league);
+    assert(!!bulkListing.messageBody);
+
+    const rateLimitKey = `create-bulk-listing_${targetChannelId}`;
+    const retryAfterMs = await this.rateLimitService.fetchLimitMs(
+      rateLimitKey,
+      bulkListing.discordUserId
+    );
+    if (retryAfterMs > 0) {
+      throw new Error(
+        `Cooldown active try again in ${Math.round(
+          retryAfterMs / 1000
+        )} seconds.`
+      );
+    }
+    await this.rateLimitService.updateLimit(
+      rateLimitKey,
+      bulkListing.discordUserId,
+      5
+    );
+
+    const userBlacklisted = this.blacklistService.userIsBlacklisted(
+      bulkListing.poeAccountProfileName
+    );
+    if (userBlacklisted) {
+      throw new Error(
+        `User ${bulkListing.poeAccountProfileName} is blacklisted by TFT`
+      );
+    }
+
+    const memberUser = await this.discordService.fetchGuildMember(
+      bulkListing.discordUserId,
+      this.config.severId,
+      true
+    );
+    if (!memberUser) {
+      throw new Error(
+        `User ${bulkListing.discordUserId} is not a member of the server`
+      );
+    }
+
+    const userHasBadRoles = memberUser.roles.cache.some((e) =>
+      ["Trade Restricted", "Muted"].includes(e.name)
+    );
+    if (userHasBadRoles) {
+      throw new Error(`User ${bulkListing.discordUserId} is trade restricted`);
+    }
+
+    if (
+      targetChannelId === "874662778592460851" &&
+      !memberUser.roles.cache.some((e) => e.id === "848751148478758914")
+    ) {
+      throw new Error(
+        `User ${bulkListing.discordUserId} must have their poe account linked to TFT to access this channel. Read more (https://discord.com/channels/645607528297922560/665132391983218694/1096931567236022352)`
+      );
+    }
+
+    const mappedMessageBody = bulkListing.messageBody
+      .replaceAll(":divine:", "<:divine:666765844541603861>")
+      .replaceAll(":chaos:", "<:chaos:951514139610738728>");
+
+    const channelId = bulkListing.test
+      ? "1075492470294585535"
+      : targetChannelId;
+
+    const messageResp = await this.discordService.sendMessage(
+      channelId,
+      `${mappedMessageBody}\nby <@${bulkListing.discordUserId}> using https://poestack.com/tft/bulk-tool`,
+      bulkListing.imageUrl
+    );
+
+    if (!bulkListing.test) {
+      await this.rateLimitService.updateLimit(
+        rateLimitKey,
+        bulkListing.discordUserId,
+        cooldown
+      );
+    }
+
+    return {
+      sucess: !!messageResp,
+      rateLimitedForSeconds: cooldown,
+    };
+  }
+
+  //TDOD delete
   public async createBulkListing(bulkListing: TftBulkListing): Promise<{
     sucess: boolean;
     rateLimitedForSeconds: number;
@@ -50,7 +147,9 @@ export default class TftOneClickService {
     );
     if (retryAfterMs > 0) {
       throw new Error(
-        `Cooldown active try again in ${Math.round(retryAfterMs / 1000)} seconds.`
+        `Cooldown active try again in ${Math.round(
+          retryAfterMs / 1000
+        )} seconds.`
       );
     }
     await this.rateLimitService.updateLimit(
@@ -117,16 +216,20 @@ export default class TftOneClickService {
       .replaceAll(":divine:", "<:divine:666765844541603861>")
       .replaceAll(":chaos:", "<:chaos:951514139610738728>");
 
+    const channelId = bulkListing.test
+      ? "1075492470294585535"
+      : targetChannel.channelId;
+
     const messageResp = await this.discordService.sendMessage(
-      targetChannel.channelId,
-      `${mappedMessageBody}\nby <@${bulkListing.discordUserId}>`,
+      channelId,
+      `${mappedMessageBody}\nby <@${bulkListing.discordUserId}>  using https://poestack.com/tft/bulk-tool`,
       targetChannel.disableImages ? null : bulkListing.imageUrl
     );
 
     const listingHistory: OneClickMessageHistory = {
       messageId: messageResp.id,
       userId: bulkListing.poeAccountId,
-      channelId: targetChannel.channelId,
+      channelId: channelId,
       exportType: bulkListing.listingType,
       exportSubType: bulkListing.listingSubType,
       rateLimitExpires: new Date(
@@ -138,11 +241,13 @@ export default class TftOneClickService {
       data: listingHistory,
     });
 
-    await this.rateLimitService.updateLimit(
-      rateLimitKey,
-      bulkListing.discordUserId,
-      targetChannel.rateLimitSeconds ?? 900
-    );
+    if (!bulkListing.test) {
+      await this.rateLimitService.updateLimit(
+        rateLimitKey,
+        bulkListing.discordUserId,
+        targetChannel.rateLimitSeconds ?? 900
+      );
+    }
 
     return {
       sucess: !!messageResp,
@@ -162,6 +267,19 @@ export class TftBulkListing {
   listingSubType?: string;
   messageBody: string;
 
+  imageUrl: string;
+
+  test: boolean;
+}
+
+export class TftBulkListing2 {
+  discordUserId: string;
+
+  poeAccountProfileName: string;
+  poeAccountId: string;
+
+  league: string;
+  messageBody: string;
   imageUrl: string;
 
   test: boolean;

@@ -66,6 +66,11 @@ export default class PoeApi {
       body: params,
     });
 
+    const policy = response.headers.get("x-rate-limit-policy");
+    const retryAfter = response.headers.get("retry-after");
+    const rules = response.headers.get("x-rate-limit-rules")?.split(",");
+    console.log("exchange rate limit", policy, rules, retryAfter);
+
     const data = await response.json();
     return data?.access_token;
   }
@@ -269,12 +274,21 @@ export default class PoeApi {
       rules: [],
       policy: response.headers.get("x-rate-limit-policy"),
       limits: [],
-      retryAfterMs: parseInt(response.headers.get("retry-after") || "0") * 1000,
+      retryAfterMs: Math.min(
+        parseInt(response.headers.get("retry-after") || "0") * 1000,
+        1000 * 60 * 3
+      ),
       timestampMs: requestTimestampEpochMs,
     };
 
     const rules = response.headers.get("x-rate-limit-rules")?.split(",");
-    if (rules) {
+    console.log(
+      "x-rate-limit",
+      rateLimitInfo.policy,
+      rules,
+      rateLimitInfo.retryAfterMs
+    );
+    if (rateLimitInfo.policy && rules?.length > 0) {
       for (const rule of rules) {
         const limitArray = response.headers
           .get(`x-rate-limit-${rule}`)
