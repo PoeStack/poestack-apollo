@@ -3,6 +3,7 @@ import {
   GqlStashViewSettings,
   GqlStashViewStashSummary,
 } from "./../../models/basic-models";
+import { STASH_VIEW_TFT_CATEGORIES } from "./stash-view-tft-categories";
 
 export class StashViewUtil {
   public static smartLimitOutput(
@@ -69,10 +70,24 @@ export class StashViewUtil {
       (e) =>
         settings.searchString.trim().length === 0 ||
         e.searchableString.includes(settings.searchString.toLowerCase()),
-      (e) =>
-        settings.selectedExporter !== "TFT-Bulk" ||
-        !settings.checkedTags ||
-        settings.checkedTags.some((t) => t === e.itemGroupTag),
+      (e) => {
+        if (
+          settings.selectedExporter === "TFT-Bulk" &&
+          settings.tftSelectedCategory
+        ) {
+          const category =
+            STASH_VIEW_TFT_CATEGORIES[settings.tftSelectedCategory!]!;
+          if (category && category.filter && !category.filter(e)) {
+            return false;
+          }
+
+          return (
+            !settings.checkedTags ||
+            settings.checkedTags.some((t) => t === e.itemGroupTag)
+          );
+        }
+        return true;
+      },
     ];
 
     const result = [...summary.items].filter((e) => filters.every((f) => f(e)));

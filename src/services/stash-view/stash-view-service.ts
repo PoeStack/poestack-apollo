@@ -13,6 +13,7 @@ import ItemGroupingService from "../pricing/item-grouping-service";
 import ItemValueHistoryService from "../pricing/item-value-history-service";
 import {
   GqlItemGroup,
+  GqlStashViewItemSummary,
   GqlStashViewSettings,
   GqlStashViewStashSummary,
   GqlStashViewStashSummarySearch,
@@ -32,19 +33,6 @@ export default class StashViewService {
     private readonly itemValueHistoryService: ItemValueHistoryService,
     private readonly tftOneClickService: TftOneClickService
   ) {}
-
-  public async test() {
-    const users = await this.postgresService.prisma.userProfile.findMany({
-      where: { opaqueKey: "NA" },
-      select: { userId: true },
-    });
-    for (const user of users) {
-      await this.postgresService.prisma.userProfile.update({
-        where: { userId: user.userId },
-        data: { opaqueKey: nanoid() },
-      });
-    }
-  }
 
   public async updateTabsInternal(
     jobId: string,
@@ -101,15 +89,12 @@ export default class StashViewService {
           tab["userId"] = userId;
           tab["updatedAtTimestamp"] = new Date();
 
-          await this.s3Service.putJson(
-            "poe-stack-stash-view",
-            `tabs/${userId}/${league}/${tab.id}.json`,
-            tab
-          );
-
           const itemSummariesToWrite: StashViewItemSummary[] = [];
           for (const item of tab.items) {
             const group = this.itemGroupingService.findOrCreateItemGroup(item);
+
+            item["itemGroupHashString"] = group?.hashString;
+            item["itemGroupTag"] = group?.tag;
 
             const searchableString = group
               ? group.key
@@ -165,10 +150,19 @@ export default class StashViewService {
               valuationStockInfluence: "smart-influence",
             }
           );
+
           const stashTotalValue = _.sumBy(
             itemSummariesToWrite,
             (e) => e["totalValueChaos"] ?? 0
           );
+
+          tab["totalValueChaos"] = stashTotalValue;
+          await this.s3Service.putJson(
+            "poe-stack-stash-view",
+            `tabs/${userId}/${league}/${tab.id}.json`,
+            tab
+          );
+
           await this.postgresService.prisma.stashViewValueSnapshot.create({
             data: {
               id: nanoid(),
@@ -257,7 +251,7 @@ export default class StashViewService {
         league: input.league,
         messageBody: listingBody,
         imageUrl: !targetChannel.disableImages
-          ? `https://poestack.com/api/stash-view/tft-export-image?input=${encodeURIComponent(
+          ? `https://octopus-app-tw5um.ondigitalocean.app/api/stash-view/tft-export-image?input=${encodeURIComponent(
               JSON.stringify(input)
             )}`
           : null,
@@ -270,7 +264,8 @@ export default class StashViewService {
 
   public async fetchStashViewTabSummary(
     appliedUserId: string,
-    search: GqlStashViewStashSummarySearch
+    search: GqlStashViewStashSummarySearch,
+    mappItemGroups: boolean = true
   ): Promise<GqlStashViewStashSummary> {
     const items =
       await this.postgresService.prisma.stashViewItemSummary.findMany({
@@ -288,6 +283,16 @@ export default class StashViewService {
     const itemGroups = await this.postgresService.prisma.itemGroupInfo.findMany(
       { where: { hashString: { in: uniqItemGroupIds } } }
     );
+
+    if (mappItemGroups) {
+      (items as GqlStashViewItemSummary[]).forEach((e) => {
+        if (e.itemGroupHashString) {
+          e.itemGroup = (itemGroups as unknown as GqlItemGroup[]).find(
+            (g) => g.hashString === e.itemGroupHashString
+          );
+        }
+      });
+    }
 
     return {
       items: items,

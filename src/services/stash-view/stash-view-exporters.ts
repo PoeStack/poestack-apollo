@@ -7,6 +7,7 @@ import {
 } from "models/basic-models";
 import { GeneralUtils } from "../../utils/general-util";
 import { StashViewUtil } from "./stash-view-util";
+import _ from "lodash";
 
 export class StashViewExporters {
   public static exportTftCompassesBulk(
@@ -16,23 +17,17 @@ export class StashViewExporters {
   ): string {
     let output: string[] = [];
 
-    const mapped: (GqlStashViewItemSummary & { itemGroup: GqlItemGroup })[] =
+    const filteredItems: GqlStashViewItemSummary[] =
       StashViewUtil.reduceItemStacks(
         StashViewUtil.searchItems(stashSettings, summary).filter(
-          (e) => !!e.valueChaos && []
+          (e) => !!e.valueChaos
         )
-      ).map((e: GqlStashViewItemSummary & { itemGroup: GqlItemGroup }) => {
-        e.itemGroup = summary.itemGroups.find(
-          (g) => e.itemGroupHashString === g.hashString
-        );
-        return e;
-      });
+      ).sort(
+        (a, b) =>
+          StashViewUtil.itemValue(stashSettings, b) -
+          StashViewUtil.itemValue(stashSettings, a)
+      );
 
-    const filteredItems = mapped.sort(
-      (a, b) =>
-        StashViewUtil.itemValue(stashSettings, b) -
-        StashViewUtil.itemValue(stashSettings, a)
-    );
     for (const item of filteredItems) {
       output.push(
         `${item.quantity}x ${
@@ -51,18 +46,220 @@ export class StashViewExporters {
     return StashViewUtil.smartLimitOutput(3000, header, output, null, 100);
   }
 
+  public static exportTftHeistBulk(
+    summary: GqlStashViewStashSummary,
+    tabs: GqlPoeStashTab[],
+    stashSettings: GqlStashViewSettings
+  ): string {
+    const mapped: GqlStashViewItemSummary[] = StashViewUtil.reduceItemStacks(
+      StashViewUtil.searchItems(stashSettings, summary).filter(
+        (e) => !!e.valueChaos
+      )
+    );
+
+    const output = [];
+
+    const contractGroups = _.sortBy(
+      Object.values(
+        _.groupBy(
+          mapped.filter((i) => i.itemGroup.tag === "contract"),
+          (i) => i.itemGroup.key
+        )
+      ),
+      (i) => i?.[0].valueChaos
+    ).reverse();
+
+    const blueprintGroups = _.sortBy(
+      Object.values(
+        _.groupBy(
+          mapped.filter((i) => i.itemGroup.tag === "blueprint"),
+          (i) => i.itemGroup.key
+        )
+      ),
+      (i) => i?.[0].valueChaos
+    ).reverse();
+
+    for (const blueprints of blueprintGroups) {
+      const lines = [];
+      let totalChaosValue = 0;
+      for (const blueprint of blueprints) {
+        const ilvl = blueprint.itemGroup.properties.find(
+          (p) => p.key === "ilvl"
+        ).value;
+        const totalWings = blueprint.itemGroup.properties.find(
+          (p) => p.key === "totalWings"
+        ).value;
+        const fullyRevealed = blueprint.itemGroup.properties.find(
+          (p) => p.key === "fullyRevealed"
+        ).value;
+
+        totalChaosValue += StashViewUtil.itemStackTotalValue(
+          stashSettings,
+          blueprint
+        );
+        lines.push(
+          `x${blueprint.quantity} lvl ${ilvl} ${totalWings} wings${
+            fullyRevealed ? " fully revealed" : ""
+          } ${blueprint.itemGroup.key} ${+StashViewUtil.itemStackTotalValue(
+            stashSettings,
+            blueprint
+          ).toFixed(1)}c each`
+        );
+      }
+      lines.unshift(
+        `\n--${blueprints[0].itemGroup.key} ${totalChaosValue.toFixed(
+          0
+        )} :chaos: all--`
+      );
+      output.push(lines.join("\n"));
+    }
+
+    for (const contracts of contractGroups) {
+      const lines = [];
+      let totalChaosValue = 0;
+      for (const contract of contracts) {
+        const ilvl = contract.itemGroup.properties.find(
+          (p) => p.key === "ilvl"
+        ).value;
+
+        totalChaosValue += StashViewUtil.itemStackTotalValue(
+          stashSettings,
+          contract
+        );
+        lines.push(
+          `x${contract.quantity} lvl ${ilvl} ${
+            contract.itemGroup.key
+          } ${+StashViewUtil.itemStackTotalValue(
+            stashSettings,
+            contract
+          ).toFixed(1)}c each`
+        );
+      }
+      lines.unshift(
+        `\n--${contracts[0].itemGroup.key} ${totalChaosValue.toFixed(
+          0
+        )} :chaos: all--`
+      );
+
+      output.push(lines.join("\n"));
+    }
+
+    const header = `WTS Softcore (no corrupted) | IGN: ${stashSettings.ign}`;
+    return StashViewUtil.smartLimitOutput(3000, header, output, null, 100);
+  }
+
+  public static exportLogbooksBulk(
+    summary: GqlStashViewStashSummary,
+    tabs: GqlPoeStashTab[],
+    stashSettings: GqlStashViewSettings
+  ): string {
+    const mapped: GqlStashViewItemSummary[] = StashViewUtil.reduceItemStacks(
+      StashViewUtil.searchItems(stashSettings, summary).filter(
+        (e) => !!e.valueChaos
+      )
+    );
+
+    const groups = _.sortBy(
+      Object.values(_.groupBy(mapped, (i) => i.itemGroup.key)),
+      (i) => i?.[0].valueChaos
+    ).reverse();
+
+    const output = [];
+    for (const group of groups) {
+      const lines = [];
+      let groupTotalValue = 0;
+      for (const item of _.sortBy(group, (g) =>
+        StashViewUtil.itemStackTotalValue(stashSettings, g)
+      ).reverse()) {
+        const corrupted = (item.itemGroup.properties as any[]).find(
+          (p) => p.key === "corrupted"
+        ).value;
+        const split = (item.itemGroup.properties as any[]).find(
+          (p) => p.key === "split"
+        ).value;
+
+        if (!corrupted && !split) {
+          const ilvl = (item.itemGroup.properties as any[]).find(
+            (p) => p.key === "ilvl"
+          ).value;
+
+          groupTotalValue += StashViewUtil.itemStackTotalValue(
+            stashSettings,
+            item
+          );
+
+          lines.push(
+            `x${item.quantity} lvl ${ilvl} ${
+              item.itemGroup.key
+            } ${StashViewUtil.itemValue(stashSettings, item)}c each`
+          );
+        }
+      }
+      lines.unshift(
+        `\n--${group[0].itemGroup.key} ${StashViewExporters.chaosToDivPlusChaos(
+          stashSettings.chaosToDivRate,
+          groupTotalValue
+        )} all--`
+      );
+
+      output.push(lines.join("\n"));
+    }
+
+    const header = `WTS ${
+      stashSettings.league?.includes("Hardcore") ? "Hardcore " : "Softcore "
+    }Logbooks (no corrupted, no split) | IGN: ${stashSettings.ign}`;
+    return StashViewUtil.smartLimitOutput(3000, header, output, null, 100);
+  }
+
+  public static exportTftBeastBulk(
+    summary: GqlStashViewStashSummary,
+    tabs: GqlPoeStashTab[],
+    stashSettings: GqlStashViewSettings
+  ): string {
+    const mapped: GqlStashViewItemSummary[] = StashViewUtil.reduceItemStacks(
+      StashViewUtil.searchItems(stashSettings, summary).filter(
+        (e) => !!e.valueChaos
+      )
+    ).sort(
+      (a, b) =>
+        StashViewUtil.itemValue(stashSettings, b) -
+        StashViewUtil.itemValue(stashSettings, a)
+    );
+
+    const output = [];
+    for (const item of mapped) {
+      output.push(
+        `${item.quantity}x ${GeneralUtils.capitalize(
+          item.searchableString
+        )} ${StashViewExporters.chaosToDivPlusChaos(
+          stashSettings.chaosToDivRate,
+          StashViewUtil.itemValue(stashSettings, item)
+        )} each (${StashViewExporters.chaosToDivPlusChaos(
+          stashSettings.chaosToDivRate,
+          StashViewUtil.itemStackTotalValue(stashSettings, item)
+        )} all)`
+      );
+    }
+
+    const header = `WTS Softcore`;
+    const footer = `IGN ${stashSettings.ign}`;
+    return StashViewUtil.smartLimitOutput(3000, header, output, footer, 100);
+  }
+
   public static exportTftGenericBulk(
     summary: GqlStashViewStashSummary,
     tabs: GqlPoeStashTab[],
     stashSettings: GqlStashViewSettings
   ): string {
-    const filteredItems = StashViewUtil.searchItems(stashSettings, summary)
-      .filter((e) => !!e.valueChaos)
-      .sort(
-        (a, b) =>
-          StashViewUtil.itemValue(stashSettings, b) -
-          StashViewUtil.itemValue(stashSettings, a)
-      );
+    const filteredItems = StashViewUtil.reduceItemStacks(
+      StashViewUtil.searchItems(stashSettings, summary).filter(
+        (e) => !!e.valueChaos
+      )
+    ).sort(
+      (a, b) =>
+        StashViewUtil.itemValue(stashSettings, b) -
+        StashViewUtil.itemValue(stashSettings, a)
+    );
 
     let totalValue = 0;
     let totalListedValue = 0;
@@ -98,6 +295,10 @@ export class StashViewExporters {
     divRate: number,
     totalChaos: number
   ): string {
+    if (totalChaos < divRate) {
+      return `${GeneralUtils.roundToFirstNoneZeroN(totalChaos!)} :chaos:`;
+    }
+
     const div = Math.floor(totalChaos / divRate);
     const divMsg = `${Math.floor(totalChaos / divRate)} :divine: + `;
     return (

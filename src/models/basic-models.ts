@@ -1156,6 +1156,9 @@ export class GqlStashViewItemSummary {
 
   @Field({ nullable: true })
   icon?: string;
+
+  @Field({ nullable: true })
+  itemGroup?: GqlItemGroup;
 }
 
 @InputType("StashViewSettings")
@@ -1216,9 +1219,6 @@ export class GqlOneClickMessageHistory {
 
 @ObjectType("ItemGroupListing")
 export class GqlItemGroupListing {
-  @Field()
-  itemGroupHashString: string;
-
   @Field()
   accountName: string;
 

@@ -222,7 +222,7 @@ export default class TftOneClickService {
 
     const messageResp = await this.discordService.sendMessage(
       channelId,
-      `${mappedMessageBody}\nby <@${bulkListing.discordUserId}>  using https://poestack.com/tft/bulk-tool`,
+      `${mappedMessageBody}\nby <@${bulkListing.discordUserId}> using https://poestack.com/tft/bulk-tool`,
       targetChannel.disableImages ? null : bulkListing.imageUrl
     );
 

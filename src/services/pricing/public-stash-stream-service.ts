@@ -279,19 +279,18 @@ export default class PublicStashStreamService {
         }
 
         const mappings = {
-          alch: "orb of alchemy",
+     /*      alch: "orb of alchemy", */
           chaos: "chaos orb",
-          exalt: "exalted orb",
-          ex: "exalted orb",
+          /* exalt: "exalted orb", */
+          /* ex: "exalted orb", */
           c: "chaos orb",
           d: "divine orb",
           div: "divine orb",
           divine: "divine orb",
-          "orb of alchemy": "orb of alchemy",
+/*           "orb of alchemy": "orb of alchemy", */
           "chaos orb": "chaos orb",
-          "exalted orb": "exalted orb",
+    /*       "exalted orb": "exalted orb", */
           "divine orb": "divine orb",
-          gold: "gold",
         };
 
         const baseCurrencyType = league.toLowerCase().includes("ruthless")

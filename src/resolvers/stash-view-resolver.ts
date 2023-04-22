@@ -97,10 +97,11 @@ export class StashViewResolver {
       userId = user.userId;
     }
 
-    const items = await this.stashViewService.fetchStashViewTabSummary(
+    const summary = await this.stashViewService.fetchStashViewTabSummary(
       userId,
-      search
+      search,
+      false
     );
-    return items;
+    return summary;
   }
 }

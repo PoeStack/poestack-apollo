@@ -76,6 +76,13 @@ export default class ItemValueHistoryService {
       valuationStockInfluence: string;
     }
   ) {
+    const itemGroupsTotalQuantity = {};
+    for (const item of items) {
+      itemGroupsTotalQuantity[item.itemGroupHashString] =
+        (itemGroupsTotalQuantity[item.itemGroupHashString] ?? 0) +
+        item.quantity;
+    }
+
     const itemsWithItemGroup = items.filter((e) => !!e.itemGroupHashString);
 
     const allItemGroupHashStrings = itemsWithItemGroup.map(
@@ -107,7 +114,10 @@ export default class ItemValueHistoryService {
               (a, b) => a.stockRangeStartInclusive - b.stockRangeStartInclusive
             );
           for (const pValue of sortedPValues) {
-            if (pValue.stockRangeStartInclusive < item.quantity) {
+            if (
+              pValue.stockRangeStartInclusive <
+              itemGroupsTotalQuantity[item.itemGroupHashString]
+            ) {
               selectedPValue = pValue.value;
             }
           }

@@ -145,7 +145,7 @@ export default class ItemGroupExporterService {
         listingType: input.exportType,
         listingSubType: input.exportSubType,
         messageBody: exportedData.exportRaw,
-        imageUrl: `https://poestack.com/api/bulk-export/test?input=${encodeURIComponent(
+        imageUrl: `https://octopus-app-tw5um.ondigitalocean.app/api/bulk-export/test?input=${encodeURIComponent(
           JSON.stringify(input)
         )}`,
         test: false,

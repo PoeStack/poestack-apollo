@@ -28,6 +28,8 @@ export default class PoeApi {
 
   private readonly poeApiSecret: string = process.env.POE_CLIENT_SECRET;
 
+  private exchangeTokenRetryDate: Date | null = null;
+
   constructor(
     private readonly rateLimitService: PoeRateLimitService,
     private readonly postgresService: PostgresService,
@@ -48,6 +50,14 @@ export default class PoeApi {
   }
 
   public async exchangeForToken(authCode: string): Promise<string> {
+    if (
+      this.exchangeTokenRetryDate &&
+      this.exchangeTokenRetryDate.getTime() > new Date().getTime()
+    ) {
+      await this.discordService.ping("Exchange GGG rate limited.");
+      throw new Error("GGG rate limited try again soon.");
+    }
+
     const url = `${this.baseAuthApiUrl}/oauth/token`;
 
     const params = new URLSearchParams();
@@ -67,9 +77,14 @@ export default class PoeApi {
     });
 
     const policy = response.headers.get("x-rate-limit-policy");
-    const retryAfter = response.headers.get("retry-after");
+    const retryAfter = parseInt(response.headers.get("retry-after") ?? "0");
+
     const rules = response.headers.get("x-rate-limit-rules")?.split(",");
     console.log("exchange rate limit", policy, rules, retryAfter);
+
+    if (retryAfter) {
+      this.exchangeTokenRetryDate = new Date(Date.now() + retryAfter * 1000);
+    }
 
     const data = await response.json();
     return data?.access_token;
@@ -275,7 +290,7 @@ export default class PoeApi {
       policy: response.headers.get("x-rate-limit-policy"),
       limits: [],
       retryAfterMs: Math.min(
-        parseInt(response.headers.get("retry-after") || "0") * 1000,
+        parseInt(response.headers.get("retry-after") ?? "0") * 1000,
         1000 * 60 * 3
       ),
       timestampMs: requestTimestampEpochMs,
