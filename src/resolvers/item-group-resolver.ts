@@ -4,13 +4,15 @@ import { singleton } from "tsyringe";
 import ItemValueHistoryService from "../services/pricing/item-value-history-service";
 import { GqlItemGroupListing } from "../models/basic-models";
 import MathUtils from "../services/utils/math-utils";
+import ItemGroupLivePricingService from "../services/pricing/item-group-live-pricing-service";
 
 @Resolver()
 @singleton()
 export class ItemGroupResolver {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly itemValueHistoryService: ItemValueHistoryService
+    private readonly itemValueHistoryService: ItemValueHistoryService,
+    private readonly itemGroupLivePricingService: ItemGroupLivePricingService
   ) {}
 
   @Query(() => [String])
@@ -28,24 +30,15 @@ export class ItemGroupResolver {
     @Arg("hashString") hashString: string,
     @Arg("minStock", { nullable: true, defaultValue: 0 }) minStock: number = 0
   ) {
-    const listings: any[] = await this.postgresService.prisma
-      .$queryRaw`select * from (select max("listedAtTimestamp") as "listedAtTimestamp", "accountName", avg("listedValueChaos") as "listedValueChaos", sum("stackSize") as "stackSize" from "PublicStashListing" psl 
-      where "itemGroupHashString" = ${hashString} and "league" = ${league} and "listedAtTimestamp" > now() at time zone 'utc' - INTERVAL '3 hour'
-      group by "accountName") x
-      where x."stackSize" >= ${minStock}
-      order by x."listedValueChaos" asc`;
+    const listings = await this.itemGroupLivePricingService.fetchListings({
+      itemGroupHashString: hashString,
+      league: league,
+    });
 
-    const filteredListings = MathUtils.filterOutliersBy(listings, (e) =>
-      Number(e.listedValueChaos)
-    );
+    const filteredListings = listings.filter((e) => e.stackSize >= minStock);
 
     const start = Math.floor(filteredListings.length * 0.02);
-    return filteredListings.slice(start, start + 20).map((e) => ({
-      accountName: e.accountName,
-      listedAtTimestamp: e.listedAtTimestamp,
-      stackSize: Number(e.stackSize),
-      listedValueChaos: Number(e.listedValueChaos),
-    }));
+    return filteredListings.slice(start, start + 20);
   }
 
   @Query(() => Float)

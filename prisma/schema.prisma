@@ -357,6 +357,16 @@ model StashViewValueSnapshot {
   value     Float
 }
 
+model StashViewTabSnapshotRecord {
+  userId  String
+  league  String
+  stashId String
+
+  timestamp DateTime
+
+  @@id([userId, league, stashId])
+}
+
 model StashViewItemSummary {
   itemId String
   userId String
@@ -380,5 +390,6 @@ model StashViewItemSummary {
 
   @@id([userId, stashId, x, y])
   @@index([userId])
+  @@index([stashId])
   @@index([league])
 }

@@ -69,21 +69,24 @@ export default class ItemValueHistoryService {
   }
 
   public async injectItemPValue(
-    items: { itemGroupHashString: string; quantity: number }[],
+    items: {
+      itemGroupHashString?: string | null | undefined;
+      quantity: number;
+    }[],
     options: {
       league: string;
       valuationTargetPValue: string;
       valuationStockInfluence: string;
     }
   ) {
+    const itemsWithItemGroup = items.filter((e) => !!e.itemGroupHashString);
+
     const itemGroupsTotalQuantity = {};
-    for (const item of items) {
+    for (const item of itemsWithItemGroup) {
       itemGroupsTotalQuantity[item.itemGroupHashString] =
         (itemGroupsTotalQuantity[item.itemGroupHashString] ?? 0) +
         item.quantity;
     }
-
-    const itemsWithItemGroup = items.filter((e) => !!e.itemGroupHashString);
 
     const allItemGroupHashStrings = itemsWithItemGroup.map(
       (i) => i.itemGroupHashString

@@ -1190,6 +1190,9 @@ export class GqlStashViewSettings {
   @Field()
   exporterListedValueMultipler: number;
 
+  @Field(() => [String])
+  excludedItemGroupIds: string[];
+
   @Field({ nullable: true })
   ign: string;
   @Field({ nullable: true })

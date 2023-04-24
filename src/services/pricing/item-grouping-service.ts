@@ -1176,6 +1176,7 @@ export class CurrencyGroupIdentifier implements ItemGroupIdentifier {
         "cursed words",
         "the finishing touch",
         "imperial legacy",
+        "brother's gift",
       ]),
     },
     scarab: {

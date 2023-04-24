@@ -279,23 +279,16 @@ export default class PublicStashStreamService {
         }
 
         const mappings = {
-     /*      alch: "orb of alchemy", */
           chaos: "chaos orb",
-          /* exalt: "exalted orb", */
-          /* ex: "exalted orb", */
           c: "chaos orb",
           d: "divine orb",
           div: "divine orb",
           divine: "divine orb",
-/*           "orb of alchemy": "orb of alchemy", */
           "chaos orb": "chaos orb",
-    /*       "exalted orb": "exalted orb", */
           "divine orb": "divine orb",
         };
 
-        const baseCurrencyType = league.toLowerCase().includes("ruthless")
-          ? "orb of alchemy"
-          : "chaos orb";
+        const baseCurrencyType = "chaos orb";
 
         if (mappings[currenyType] === baseCurrencyType) {
           return value;

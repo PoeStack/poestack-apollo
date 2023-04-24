@@ -178,12 +178,34 @@ export default class StashViewService {
             delete e["totalValueChaos"];
           });
 
-          await this.postgresService.prisma.stashViewItemSummary.deleteMany({
+          await this.s3Service.putJson(
+            "poe-stack-stash-view",
+            `tabs/${userId}/${league}/${tab.id}_summary.json`,
+            { itemSummaries: itemSummariesToWrite }
+          );
+          await this.postgresService.prisma.stashViewTabSnapshotRecord.upsert({
+            where: {
+              userId_league_stashId: {
+                league: league,
+                stashId: tab.id,
+                userId: userId,
+              },
+            },
+            create: {
+              league: league,
+              stashId: tab.id,
+              userId: userId,
+              timestamp: new Date(),
+            },
+            update: { timestamp: new Date() },
+          });
+
+          /* await this.postgresService.prisma.stashViewItemSummary.deleteMany({
             where: { userId: userId, stashId: tab.id },
           });
           await this.postgresService.prisma.stashViewItemSummary.createMany({
             data: itemSummariesToWrite,
-          });
+          }); */
 
           indexProgress++;
           await this.updateJob(
@@ -267,10 +289,21 @@ export default class StashViewService {
     search: GqlStashViewStashSummarySearch,
     mappItemGroups: boolean = true
   ): Promise<GqlStashViewStashSummary> {
-    const items =
-      await this.postgresService.prisma.stashViewItemSummary.findMany({
+    const validTabs =
+      await this.postgresService.prisma.stashViewTabSnapshotRecord.findMany({
         where: { userId: appliedUserId, league: search.league },
       });
+
+    const s3Promises = validTabs.map(async (tab) => {
+      const snapshot = await this.s3Service.getJson(
+        "poe-stack-stash-view",
+        `tabs/${appliedUserId}/${search.league}/${tab.stashId}_summary.json`
+      );
+      return snapshot?.itemSummaries;
+    });
+
+    const items = (await Promise.all(s3Promises)).flatMap((e) => e);
+
     await this.itemValueHistoryService.injectItemPValue(items, {
       league: search.league,
       valuationStockInfluence: "smart-influnce",
