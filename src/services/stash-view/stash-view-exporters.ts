@@ -10,6 +10,7 @@ import { StashViewUtil } from "./stash-view-util";
 import _ from "lodash";
 
 export class StashViewExporters {
+
   public static exportTftCompassesBulk(
     summary: GqlStashViewStashSummary,
     tabs: GqlPoeStashTab[],
@@ -24,26 +25,37 @@ export class StashViewExporters {
         )
       ).sort(
         (a, b) =>
-          StashViewUtil.itemValue(stashSettings, b) -
-          StashViewUtil.itemValue(stashSettings, a)
+          StashViewUtil.itemStackTotalValue(stashSettings, b) -
+          StashViewUtil.itemStackTotalValue(stashSettings, a)
       );
 
     for (const item of filteredItems) {
-      output.push(
-        `${item.quantity}x ${
-          item.itemGroup.displayName
-        } ${StashViewUtil.itemValue(
-          stashSettings,
-          item
-        )} :chaos: / each (${StashViewExporters.chaosToDivPlusChaos(
+      let line = `${item.quantity}x ${
+        item.itemGroup.displayName
+      } ${StashViewExporters.chaosToDivPlusChaos(
+        stashSettings.chaosToDivRate,
+        StashViewUtil.itemValue(stashSettings, item),
+        false
+      )} / each`;
+
+      if (item.quantity > 1) {
+        line += ` (${StashViewExporters.chaosToDivPlusChaos(
           stashSettings.chaosToDivRate,
-          StashViewUtil.itemStackTotalValue(stashSettings, item)
-        )} all)`
-      );
+          StashViewUtil.itemStackTotalValue(stashSettings, item),
+          false
+        )} all)`;
+      }
+
+      output.push(line);
     }
 
     const header = `WTS Softcore Compasses | IGN: ${stashSettings.ign} | :divine: = ${stashSettings.chaosToDivRate} :chaos:`;
-    return StashViewUtil.smartLimitOutput(3000, header, output, null, 100);
+    return StashViewUtil.smartLimitOutput(
+      2000,
+      header,
+      output,
+      null,
+    );
   }
 
   public static exportTftHeistBulk(
@@ -145,7 +157,12 @@ export class StashViewExporters {
     }
 
     const header = `WTS Softcore (no corrupted) | IGN: ${stashSettings.ign}`;
-    return StashViewUtil.smartLimitOutput(3000, header, output, null, 100);
+    return StashViewUtil.smartLimitOutput(
+      2000,
+      header,
+      output,
+      null
+    );
   }
 
   public static exportLogbooksBulk(
@@ -208,7 +225,12 @@ export class StashViewExporters {
     const header = `WTS ${
       stashSettings.league?.includes("Hardcore") ? "Hardcore " : "Softcore "
     }Logbooks (no corrupted, no split) | IGN: ${stashSettings.ign}`;
-    return StashViewUtil.smartLimitOutput(3000, header, output, null, 100);
+    return StashViewUtil.smartLimitOutput(
+      2000,
+      header,
+      output,
+      null
+    );
   }
 
   public static exportTftBeastBulk(
@@ -243,7 +265,12 @@ export class StashViewExporters {
 
     const header = `WTS Softcore`;
     const footer = `IGN ${stashSettings.ign}`;
-    return StashViewUtil.smartLimitOutput(3000, header, output, footer, 100);
+    return StashViewUtil.smartLimitOutput(
+      2000,
+      header,
+      output,
+      footer
+    );
   }
 
   public static exportTftGenericBulk(
@@ -257,17 +284,19 @@ export class StashViewExporters {
       )
     ).sort(
       (a, b) =>
-        StashViewUtil.itemValue(stashSettings, b) -
-        StashViewUtil.itemValue(stashSettings, a)
+        StashViewUtil.itemStackTotalValue(stashSettings, b) -
+        StashViewUtil.itemStackTotalValue(stashSettings, a)
     );
 
     let totalValue = 0;
     let totalListedValue = 0;
     let output: string[] = [];
     for (const item of filteredItems) {
-      const itemValue = StashViewUtil.itemValue(stashSettings, item);
-      totalValue += item.valueChaos ?? 0;
-      totalListedValue += itemValue;
+      totalValue += (item.valueChaos ?? 0) * item.quantity;
+      totalListedValue += StashViewUtil.itemStackTotalValue(
+        stashSettings,
+        item
+      );
     }
 
     const header = `WTS ${stashSettings.league}\nIGN ${
@@ -286,23 +315,37 @@ export class StashViewExporters {
       totalListedValue
     )}) ${stashSettings.exporterListedValueMultipler!}% of PoeStack Price at ratio [${GeneralUtils.roundToFirstNoneZeroN(
       stashSettings.chaosToDivRate!
-    )} :chaos: / 1 :divine:]`;
+    )} :chaos: / 1 :divine:]\nMost Valuable: ${filteredItems
+      .slice(0, 5)
+      .map((e) => GeneralUtils.capitalize(e.searchableString))
+      .join(", ")}`;
 
-    return StashViewUtil.smartLimitOutput(3000, header, output, null, 100);
+    return StashViewUtil.smartLimitOutput(
+      2000,
+      header,
+      output,
+      null
+    );
   }
 
   public static chaosToDivPlusChaos(
     divRate: number,
-    totalChaos: number
+    totalChaos: number,
+    useEmotes: boolean = true
   ): string {
     if (totalChaos < divRate) {
-      return `${GeneralUtils.roundToFirstNoneZeroN(totalChaos!)} :chaos:`;
+      return `${GeneralUtils.roundToFirstNoneZeroN(totalChaos!)}${
+        useEmotes ? " :chaos:" : "c"
+      }`;
     }
 
     const div = Math.floor(totalChaos / divRate);
-    const divMsg = `${Math.floor(totalChaos / divRate)} :divine: + `;
+    const divMsg = `${Math.floor(totalChaos / divRate)}${
+      useEmotes ? " :divine:" : " div"
+    } + `;
     return (
-      (div > 0 ? divMsg : "") + `${Math.round(totalChaos % divRate)} :chaos:`
+      (div > 0 ? divMsg : "") +
+      `${Math.round(totalChaos % divRate)}${useEmotes ? ":chaos:" : "c"}`
     );
   }
 }

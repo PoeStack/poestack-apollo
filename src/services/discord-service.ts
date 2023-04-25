@@ -87,17 +87,15 @@ export default class DiscordService {
   }
 
   public async ping(msg: string) {
+    console.log("Pinging Discord: " + msg);
     try {
-      await fetch(
-        process.env.DISCORD_WEB_HOOK,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            content: msg,
-          }),
-        }
-      );
+      await fetch(process.env.DISCORD_WEB_HOOK, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: msg,
+        }),
+      });
     } catch (error) {
       Logger.error("error during discord ping", error);
     }

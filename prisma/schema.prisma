@@ -334,6 +334,8 @@ model OneClickMessageHistory {
   exportType       String
   exportSubType    String?
   rateLimitExpires DateTime
+
+  @@index([userId])
 }
 
 model StashViewSnapshotJob {
@@ -344,6 +346,8 @@ model StashViewSnapshotJob {
   status    String
 
   totalStahes Int
+
+  @@index([userId])
 }
 
 model StashViewValueSnapshot {
@@ -355,6 +359,8 @@ model StashViewValueSnapshot {
 
   timestamp DateTime
   value     Float
+
+  @@index([userId])
 }
 
 model StashViewTabSnapshotRecord {
@@ -365,6 +371,7 @@ model StashViewTabSnapshotRecord {
   timestamp DateTime
 
   @@id([userId, league, stashId])
+  @@index([userId])
 }
 
 model StashViewItemSummary {

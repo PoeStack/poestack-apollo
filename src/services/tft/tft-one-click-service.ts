@@ -7,16 +7,18 @@ import TftBlacklistService from "./utils/tft-blacklist-service";
 import TftRateLimitService from "./utils/tft-rate-limit-service";
 import PostgresService from "../../services/mongo/postgres-service";
 import { OneClickMessageHistory } from "@prisma/client";
+import DiscordService from "../../services/discord-service";
 
 @singleton()
 export default class TftOneClickService {
   private config: TftDiscordServerConfig;
 
   constructor(
-    private discordService: TftDiscordBotService,
+    private discordBotService: TftDiscordBotService,
     private rateLimitService: TftRateLimitService,
     private blacklistService: TftBlacklistService,
-    private postgresService: PostgresService
+    private postgresService: PostgresService,
+    private discordService: DiscordService
   ) {
     this.config = JSON.parse(
       fs.readFileSync("data/tft/discord-bulk-listing-config.json").toString()
@@ -24,7 +26,7 @@ export default class TftOneClickService {
   }
 
   public async checkUserIsMember(discordId: string): Promise<boolean> {
-    const user = await this.discordService.fetchGuildMember(
+    const user = await this.discordBotService.fetchGuildMember(
       discordId,
       this.config.severId,
       true
@@ -39,6 +41,7 @@ export default class TftOneClickService {
   ): Promise<{
     sucess: boolean;
     rateLimitedForSeconds: number;
+    messageId: string | null;
   }> {
     assert(!!bulkListing);
     assert(!!bulkListing.discordUserId);
@@ -73,7 +76,7 @@ export default class TftOneClickService {
       );
     }
 
-    const memberUser = await this.discordService.fetchGuildMember(
+    const memberUser = await this.discordBotService.fetchGuildMember(
       bulkListing.discordUserId,
       this.config.severId,
       true
@@ -108,11 +111,23 @@ export default class TftOneClickService {
       ? "1075492470294585535"
       : targetChannelId;
 
-    const messageResp = await this.discordService.sendMessage(
-      channelId,
-      `${mappedMessageBody}\nby <@${bulkListing.discordUserId}> using https://poestack.com/tft/bulk-tool`,
-      bulkListing.imageUrl
-    );
+    let messageResp;
+    const body = `${mappedMessageBody}\nby <@${bulkListing.discordUserId}> using https://poestack.com/tft/bulk-tool`;
+    try {
+      messageResp = await this.discordBotService.sendMessage(
+        channelId,
+        body,
+        bulkListing.imageUrl
+      );
+    } catch (error) {
+      await this.discordService.ping(
+        `Discord message error, ${body?.length}, ${error}, ${body.slice(
+          0,
+          200
+        )}`
+      );
+      throw error;
+    }
 
     if (!bulkListing.test) {
       await this.rateLimitService.updateLimit(
@@ -123,6 +138,7 @@ export default class TftOneClickService {
     }
 
     return {
+      messageId: messageResp?.id,
       sucess: !!messageResp,
       rateLimitedForSeconds: cooldown,
     };
@@ -185,7 +201,7 @@ export default class TftOneClickService {
       );
     }
 
-    const memberUser = await this.discordService.fetchGuildMember(
+    const memberUser = await this.discordBotService.fetchGuildMember(
       bulkListing.discordUserId,
       this.config.severId,
       true
@@ -220,7 +236,7 @@ export default class TftOneClickService {
       ? "1075492470294585535"
       : targetChannel.channelId;
 
-    const messageResp = await this.discordService.sendMessage(
+    const messageResp = await this.discordBotService.sendMessage(
       channelId,
       `${mappedMessageBody}\nby <@${bulkListing.discordUserId}> using https://poestack.com/tft/bulk-tool`,
       targetChannel.disableImages ? null : bulkListing.imageUrl

@@ -8,7 +8,7 @@ import { S3Service } from "./../s3-service";
 import { UserService } from "./../user-service";
 
 import { singleton } from "tsyringe";
-import { StashViewItemSummary } from "@prisma/client";
+import { OneClickMessageHistory, StashViewItemSummary } from "@prisma/client";
 import ItemGroupingService from "../pricing/item-grouping-service";
 import ItemValueHistoryService from "../pricing/item-value-history-service";
 import {
@@ -263,7 +263,7 @@ export default class StashViewService {
     const listingBody: string = tftCategory.export(summary, null, input);
 
     const targetChannel = tftCategory.channels[input.league];
-    await this.tftOneClickService.createBulkListing2(
+    const resp = await this.tftOneClickService.createBulkListing2(
       targetChannel.channelId,
       targetChannel.timeout,
       {
@@ -275,11 +275,26 @@ export default class StashViewService {
         imageUrl: !targetChannel.disableImages
           ? `https://octopus-app-tw5um.ondigitalocean.app/api/stash-view/tft-export-image?input=${encodeURIComponent(
               JSON.stringify(input)
-            )}`
+            )}&opaqueKey=${user.opaqueKey}`
           : null,
         test: false,
       }
     );
+
+    const listingHistory: OneClickMessageHistory = {
+      messageId: resp.messageId,
+      userId: userId,
+      channelId: targetChannel.channelId,
+      exportType: input.tftSelectedCategory,
+      exportSubType: null,
+      rateLimitExpires: new Date(
+        new Date().getTime() + targetChannel.timeout * 1000
+      ),
+      timestamp: new Date(),
+    };
+    await this.postgresService.prisma.oneClickMessageHistory.create({
+      data: listingHistory,
+    });
 
     return listingBody;
   }
@@ -328,8 +343,8 @@ export default class StashViewService {
     }
 
     return {
-      items: items,
-      itemGroups: itemGroups as unknown as GqlItemGroup[],
+      items: items ?? [],
+      itemGroups: (itemGroups as unknown as GqlItemGroup[]) ?? [],
     };
   }
 }

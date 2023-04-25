@@ -90,7 +90,13 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   logbooks: {
     tags: ["logbook"],
     export: StashViewExporters.exportLogbooksBulk,
-    channels: { Crucible: { channelId: "1091415912738992148", timeout: 900 } },
+    channels: {
+      Crucible: {
+        channelId: "1091415912738992148",
+        timeout: 900,
+        disableImages: true,
+      },
+    },
   },
   oils: {
     tags: ["oil"],

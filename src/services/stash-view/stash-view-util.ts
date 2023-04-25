@@ -11,7 +11,7 @@ export class StashViewUtil {
     header: string | null,
     body: string[],
     footer: string | null,
-    buffer: number = 0,
+    buffer: number = 450,
     joiner: string = "\n"
   ): string {
     let size = (header?.length ?? 0) + (footer?.length ?? 0) + buffer;
@@ -20,13 +20,13 @@ export class StashViewUtil {
       out.push(header!);
     }
     for (const line of body) {
-      if (size + line.length + 2 < limit) {
+      if (size + line.length + joiner.length < limit) {
         out.push(line);
-        size += line.length + 2;
+        size += line.length + joiner.length;
       }
     }
     if (footer?.length ?? 0 > 0) {
-      out.push(footer!);
+      out.push(footer);
     }
     return out.join(joiner);
   }
