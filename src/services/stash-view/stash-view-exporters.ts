@@ -255,10 +255,12 @@ export class StashViewExporters {
           item.searchableString
         )} ${StashViewExporters.chaosToDivPlusChaos(
           stashSettings.chaosToDivRate,
-          StashViewUtil.itemValue(stashSettings, item)
+          StashViewUtil.itemValue(stashSettings, item),
+          false
         )} each (${StashViewExporters.chaosToDivPlusChaos(
           stashSettings.chaosToDivRate,
-          StashViewUtil.itemStackTotalValue(stashSettings, item)
+          StashViewUtil.itemStackTotalValue(stashSettings, item),
+          false
         )} all)`
       );
     }
