@@ -374,6 +374,18 @@ model StashViewTabSnapshotRecord {
   @@index([userId])
 }
 
+model StashViewAutomaticSnapshotSettings {
+  userId String
+  league String
+
+  stashIds String[]
+
+  durationBetweenSnapshotsSeconds Int
+  nextSnapshotTimestamp           DateTime
+
+  @@id([userId, league])
+}
+
 model StashViewItemSummary {
   itemId String
   userId String

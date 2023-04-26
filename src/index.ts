@@ -184,6 +184,10 @@ process
     container.resolve(CharacterVectorService).startBackgroundJob();
   }
 
+  if (process.env.START_STASH_VIEW_AUTOMATIC_SNAPSHOTS === "true") {
+    container.resolve(StashViewService).startAutomaticSnapshotJob();
+  }
+
   if (process.env.START_ONE_CLICK_JOB === "true") {
     await container.resolve(TftBlacklistService).pullBlacklist();
     container.resolve(TftBlacklistService).startBlacklistUpdateTask();
@@ -192,9 +196,9 @@ process
 
   //await container.resolve(StashViewService).test();
 
- // await container.resolve(PoeNinjaAuditService).runAduit();
+  // await container.resolve(PoeNinjaAuditService).runAduit();
 
-/*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
+  /*   if (process.env.START_UPDATE_TWITCH_STREAMERS === "true") {
     container.resolve(TwitchService).startStreamerJob();
   } */
 

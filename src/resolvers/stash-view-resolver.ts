@@ -1,4 +1,6 @@
 import {
+  GqlStashViewAutomaticSnapshotSettings,
+  GqlStashViewAutomaticSnapshotSettingsInput,
   GqlStashViewItemSummary,
   GqlStashViewJob,
   GqlStashViewSettings,
@@ -14,6 +16,7 @@ import { singleton } from "tsyringe";
 import PostgresService from "../services/mongo/postgres-service";
 import StashViewService from "../services/stash-view/stash-view-service";
 import _ from "lodash";
+import { GraphQLBoolean } from "graphql";
 
 @Resolver()
 @singleton()
@@ -81,6 +84,50 @@ export class StashViewResolver {
         where: { id: jobId },
       });
     return job;
+  }
+
+  @Query(() => GqlStashViewAutomaticSnapshotSettings)
+  async stashViewAutomaticSnapshotSettings(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("league") league: string
+  ) {
+    const settings =
+      await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.findUnique(
+        { where: { userId_league: { userId: ctx.userId, league: league } } }
+      );
+    return settings;
+  }
+
+  @Mutation(() => GraphQLBoolean)
+  async updateStashViewAutomaticSnapshotSettings(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("input") input: GqlStashViewAutomaticSnapshotSettingsInput
+  ) {
+    const durationBetweenSnapshotsSeconds = Math.max(
+      input.durationBetweenSnapshotsSeconds,
+      60 * 5
+    );
+    const nextSnapshotTimestamp = new Date(
+      Date.now() + durationBetweenSnapshotsSeconds * 1000
+    );
+    await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.upsert(
+      {
+        where: { userId_league: { userId: ctx.userId, league: input.league } },
+        create: {
+          league: input.league,
+          userId: ctx.userId,
+          durationBetweenSnapshotsSeconds: durationBetweenSnapshotsSeconds,
+          stashIds: input.stashIds,
+          nextSnapshotTimestamp: nextSnapshotTimestamp,
+        },
+        update: {
+          stashIds: input.stashIds,
+          nextSnapshotTimestamp: nextSnapshotTimestamp,
+          durationBetweenSnapshotsSeconds: durationBetweenSnapshotsSeconds,
+        },
+      }
+    );
+    return true;
   }
 
   @Query(() => GqlStashViewStashSummary)

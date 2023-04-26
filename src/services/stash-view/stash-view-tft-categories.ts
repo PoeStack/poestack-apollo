@@ -32,8 +32,14 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     export: StashViewExporters.exportTftGenericBulk,
     channels: { Crucible: { channelId: "874662778592460851", timeout: 900 } },
     filter: (item) =>
-      item.searchableString.includes("shrieking") ||
-      item.searchableString.includes("deafening"),
+      [
+        "shrieking",
+        "deafening",
+        "hysteria",
+        "insanity",
+        "horror",
+        "delirium",
+      ].some((s) => item.searchableString.includes(s)),
   },
   essence: {
     tags: ["essence"],

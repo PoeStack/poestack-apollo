@@ -112,7 +112,7 @@ export class StashViewExporters {
         lines.push(
           `x${blueprint.quantity} lvl ${ilvl} ${totalWings} wings${
             fullyRevealed ? " fully revealed" : ""
-          } ${blueprint.itemGroup.key} ${+StashViewUtil.itemStackTotalValue(
+          } ${blueprint.itemGroup.key} ${+StashViewUtil.itemValue(
             stashSettings,
             blueprint
           ).toFixed(1)}c each`
@@ -141,7 +141,7 @@ export class StashViewExporters {
         lines.push(
           `x${contract.quantity} lvl ${ilvl} ${
             contract.itemGroup.key
-          } ${+StashViewUtil.itemStackTotalValue(
+          } ${+StashViewUtil.itemValue(
             stashSettings,
             contract
           ).toFixed(1)}c each`

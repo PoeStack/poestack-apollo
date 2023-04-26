@@ -1232,3 +1232,30 @@ export class GqlItemGroupListing {
   @Field()
   listedValueChaos: number;
 }
+
+@InputType("StashViewAutomaticSnapshotSettingsInput")
+export class GqlStashViewAutomaticSnapshotSettingsInput {
+  @Field()
+  league: string;
+  @Field(() => [String])
+  stashIds: string[];
+  @Field()
+  durationBetweenSnapshotsSeconds: number;
+}
+
+
+@ObjectType("StashViewAutomaticSnapshotSettings")
+export class GqlStashViewAutomaticSnapshotSettings {
+  @Field()
+  userId: string;
+  @Field()
+  league: string;
+
+  @Field(() => [String])
+  stashIds: string[];
+
+  @Field()
+  durationBetweenSnapshotsSeconds: number;
+  @Field()
+  nextSnapshotTimestamp: Date;
+}

@@ -233,7 +233,7 @@ export default class StashViewService {
     league: string,
     tabIds: string[]
   ): Promise<string> {
-    const jobId = nanoid();
+    const jobId = `manual__${nanoid()}`;
     await this.postgresService.prisma.stashViewSnapshotJob.create({
       data: {
         id: jobId,
@@ -297,6 +297,61 @@ export default class StashViewService {
     });
 
     return listingBody;
+  }
+
+  public async startAutomaticSnapshotJob() {
+    for (;;) {
+      await new Promise((res) => setTimeout(res, 1000 * 60 * 2));
+      try {
+        const snapshotJobs =
+          await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.findMany(
+            { where: { nextSnapshotTimestamp: { lte: new Date() } } }
+          );
+
+        for (const job of snapshotJobs) {
+          try {
+            if (job.stashIds.length === 0) {
+              continue;
+            }
+
+            const jobId = `automatic__${nanoid()}`;
+            await this.postgresService.prisma.stashViewSnapshotJob.create({
+              data: {
+                id: jobId,
+                userId: job.userId,
+                timestamp: new Date(),
+                totalStahes: job.stashIds.length,
+                status: "starting",
+              },
+            });
+
+            await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.update(
+              {
+                where: {
+                  userId_league: { userId: job.userId, league: job.league },
+                },
+                data: {
+                  nextSnapshotTimestamp: new Date(
+                    Date.now() + job.durationBetweenSnapshotsSeconds * 1000
+                  ),
+                },
+              }
+            );
+
+            await this.updateTabsInternal(
+              jobId,
+              job.userId,
+              job.league,
+              job.stashIds
+            );
+          } catch (error) {
+            Logger.error("error in automatic stash snapshot job", job, error);
+          }
+        }
+      } catch (error) {
+        Logger.error("error in automatic stash snapshot job", error);
+      }
+    }
   }
 
   public async fetchStashViewTabSummary(
