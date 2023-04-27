@@ -21,6 +21,11 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
         timeout: 900,
         disableImages: true,
       },
+      Standard: {
+        channelId: "945390356286038076",
+        timeout: 900,
+        disableImages: true,
+      },
     },
     filter: (item) =>
       [4, 16].includes(
@@ -55,6 +60,11 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
         timeout: 900,
         disableImages: true,
       },
+      Standard: {
+        channelId: "961952547680161832",
+        timeout: 900,
+        disableImages: true,
+      },
     },
   },
   beast: {
@@ -63,6 +73,11 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     channels: {
       Crucible: {
         channelId: "874661938032943134",
+        timeout: 900,
+        disableImages: true,
+      },
+      Standard: {
+        channelId: "961952092514304020",
         timeout: 900,
         disableImages: true,
       },
@@ -76,7 +91,10 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   scarabs: {
     tags: ["scarab"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Crucible: { channelId: "874669036863094804", timeout: 900 } },
+    channels: {
+      Crucible: { channelId: "874669036863094804", timeout: 900 },
+      Standard: { channelId: "961952608757624842", timeout: 900 },
+    },
   },
   catalysts: {
     tags: ["catalyst"],

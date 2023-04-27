@@ -11,6 +11,7 @@ import CharacterSnapshotService from "../services/snapshot/character-snapshot-se
 import TftOneClickService from "../services/tft/tft-one-click-service";
 import { UserProfile } from "@prisma/client";
 import { nanoid } from "nanoid";
+import PatreonService from "../services/patreon-service";
 
 @Resolver()
 @singleton()
@@ -20,7 +21,8 @@ export class UserResolver {
     private readonly postgresService: PostgresService,
     private readonly discordService: DiscordService,
     private readonly tftService: TftOneClickService,
-    private readonly characterSnapshotService: CharacterSnapshotService
+    private readonly characterSnapshotService: CharacterSnapshotService,
+    private readonly patreonService: PatreonService
   ) {}
 
   @Query(() => Boolean)
@@ -66,13 +68,36 @@ export class UserResolver {
     @Ctx() ctx: PoeStackContext,
     @Arg("code") code: string
   ) {
-    const userId = await this.discordService.exchangeTokenForUserId(code);
-    if (userId) {
+    const discordUserInfo = await this.discordService.exchangeTokenForUserId(
+      code
+    );
+    if (discordUserInfo?.id) {
       await this.postgresService.prisma.userProfile.update({
         where: { userId: ctx.userId },
         data: {
-          discordUserId: userId,
+          discordUserId: discordUserInfo.id,
+          discordUsername: discordUserInfo.username,
           discordUserIdUpdatedAtTimestamp: new Date(),
+        },
+      });
+    }
+
+    return true;
+  }
+
+  @Mutation(() => Boolean)
+  public async updatePatreonCode(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("code") code: string
+  ) {
+    const patreonCode = await this.patreonService.exchangeCode(code);
+
+    if (patreonCode) {
+      await this.postgresService.prisma.userProfile.update({
+        where: { userId: ctx.userId },
+        data: {
+          patreonUserId: patreonCode,
+          patreonUpdatedAtTimestamp: new Date(),
         },
       });
     }
@@ -146,10 +171,14 @@ export class UserResolver {
       oAuthToken: accessToken,
       oAuthTokenUpdatedAtTimestamp: new Date(),
       discordUserId: null,
+      discordUsername: null,
       discordUserIdUpdatedAtTimestamp: null,
       tftMember: null,
       tftMemberUpdatedAtTimestamp: null,
       opaqueKey: nanoid(),
+      patreonUserId: null,
+      patreonTier: null,
+      patreonUpdatedAtTimestamp: null,
     };
 
     await this.postgresService.prisma.userProfile.upsert({

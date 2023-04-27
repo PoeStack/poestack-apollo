@@ -10,7 +10,6 @@ import { StashViewUtil } from "./stash-view-util";
 import _ from "lodash";
 
 export class StashViewExporters {
-
   public static exportTftCompassesBulk(
     summary: GqlStashViewStashSummary,
     tabs: GqlPoeStashTab[],
@@ -28,6 +27,9 @@ export class StashViewExporters {
           StashViewUtil.itemStackTotalValue(stashSettings, b) -
           StashViewUtil.itemStackTotalValue(stashSettings, a)
       );
+    if (filteredItems.length === 0) {
+      throw new Error("No items matched search.");
+    }
 
     for (const item of filteredItems) {
       let line = `${item.quantity}x ${
@@ -49,13 +51,12 @@ export class StashViewExporters {
       output.push(line);
     }
 
-    const header = `WTS Softcore Compasses | IGN: ${stashSettings.ign} | :divine: = ${stashSettings.chaosToDivRate} :chaos:`;
-    return StashViewUtil.smartLimitOutput(
-      2000,
-      header,
-      output,
-      null,
-    );
+    const header = `WTS ${
+      stashSettings.league === "Standard" ? "Standard" : "Softcore"
+    } Compasses | IGN: ${stashSettings.ign} | :divine: = ${
+      stashSettings.chaosToDivRate
+    } :chaos:`;
+    return StashViewUtil.smartLimitOutput(2000, header, output, null);
   }
 
   public static exportTftHeistBulk(
@@ -68,6 +69,9 @@ export class StashViewExporters {
         (e) => !!e.valueChaos
       )
     );
+    if (mapped.length === 0) {
+      throw new Error("No items matched search.");
+    }
 
     const output = [];
 
@@ -141,10 +145,9 @@ export class StashViewExporters {
         lines.push(
           `x${contract.quantity} lvl ${ilvl} ${
             contract.itemGroup.key
-          } ${+StashViewUtil.itemValue(
-            stashSettings,
-            contract
-          ).toFixed(1)}c each`
+          } ${+StashViewUtil.itemValue(stashSettings, contract).toFixed(
+            1
+          )}c each`
         );
       }
       lines.unshift(
@@ -157,12 +160,7 @@ export class StashViewExporters {
     }
 
     const header = `WTS Softcore (no corrupted) | IGN: ${stashSettings.ign}`;
-    return StashViewUtil.smartLimitOutput(
-      2000,
-      header,
-      output,
-      null
-    );
+    return StashViewUtil.smartLimitOutput(2000, header, output, null);
   }
 
   public static exportLogbooksBulk(
@@ -175,6 +173,9 @@ export class StashViewExporters {
         (e) => !!e.valueChaos
       )
     );
+    if (mapped.length === 0) {
+      throw new Error("No items matched search.");
+    }
 
     const groups = _.sortBy(
       Object.values(_.groupBy(mapped, (i) => i.itemGroup.key)),
@@ -223,14 +224,9 @@ export class StashViewExporters {
     }
 
     const header = `WTS ${
-      stashSettings.league?.includes("Hardcore") ? "Hardcore " : "Softcore "
+      stashSettings.league === "Standard" ? "Standard " : "Softcore "
     }Logbooks (no corrupted, no split) | IGN: ${stashSettings.ign}`;
-    return StashViewUtil.smartLimitOutput(
-      2000,
-      header,
-      output,
-      null
-    );
+    return StashViewUtil.smartLimitOutput(2000, header, output, null);
   }
 
   public static exportTftBeastBulk(
@@ -247,6 +243,9 @@ export class StashViewExporters {
         StashViewUtil.itemValue(stashSettings, b) -
         StashViewUtil.itemValue(stashSettings, a)
     );
+    if (mapped.length === 0) {
+      throw new Error("No items matched search.");
+    }
 
     const output = [];
     for (const item of mapped) {
@@ -265,14 +264,11 @@ export class StashViewExporters {
       );
     }
 
-    const header = `WTS Softcore`;
+    const header = `WTS ${
+      stashSettings.league === "Standard" ? "Standard " : "Softcore "
+    }`;
     const footer = `IGN ${stashSettings.ign}`;
-    return StashViewUtil.smartLimitOutput(
-      2000,
-      header,
-      output,
-      footer
-    );
+    return StashViewUtil.smartLimitOutput(2000, header, output, footer);
   }
 
   public static exportTftGenericBulk(
@@ -289,6 +285,9 @@ export class StashViewExporters {
         StashViewUtil.itemStackTotalValue(stashSettings, b) -
         StashViewUtil.itemStackTotalValue(stashSettings, a)
     );
+    if (filteredItems.length === 0) {
+      throw new Error("No items matched search.");
+    }
 
     let totalValue = 0;
     let totalListedValue = 0;
@@ -322,12 +321,7 @@ export class StashViewExporters {
       .map((e) => GeneralUtils.capitalize(e.searchableString))
       .join(", ")}`;
 
-    return StashViewUtil.smartLimitOutput(
-      2000,
-      header,
-      output,
-      null
-    );
+    return StashViewUtil.smartLimitOutput(2000, header, output, null);
   }
 
   public static chaosToDivPlusChaos(

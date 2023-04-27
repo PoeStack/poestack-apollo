@@ -7,7 +7,9 @@ import { Logger } from "./logger";
 export default class DiscordService {
   constructor(private readonly postgresService: PostgresService) {}
 
-  public async exchangeTokenForUserId(code: string): Promise<string> {
+  public async exchangeTokenForUserId(
+    code: string
+  ): Promise<{ id: string; username: string }> {
     const codeExchangeResp = await fetch(
       "https://discord.com/api/v10/oauth2/token",
       {
@@ -33,7 +35,7 @@ export default class DiscordService {
       },
     });
     const userMeJson = await userMeResp.json();
-    return userMeJson?.id;
+    return { id: userMeJson?.id, username: userMeJson?.username };
   }
 
   public async start() {

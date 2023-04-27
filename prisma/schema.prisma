@@ -89,17 +89,25 @@ model PublicStashListing {
 }
 
 model UserProfile {
-  userId                          String    @id
-  opaqueKey                       String    @unique
-  poeProfileName                  String
-  createdAtTimestamp              DateTime  @default(now())
-  lastConnectedTimestamp          DateTime  @default(now())
-  oAuthToken                      String?
-  oAuthTokenUpdatedAtTimestamp    DateTime
+  userId                 String   @id
+  opaqueKey              String   @unique
+  poeProfileName         String
+  createdAtTimestamp     DateTime @default(now())
+  lastConnectedTimestamp DateTime @default(now())
+
+  oAuthToken                   String?
+  oAuthTokenUpdatedAtTimestamp DateTime
+
   discordUserId                   String?
+  discordUsername                 String?
   discordUserIdUpdatedAtTimestamp DateTime?
-  tftMember                       Boolean?
-  tftMemberUpdatedAtTimestamp     DateTime?
+
+  tftMember                   Boolean?
+  tftMemberUpdatedAtTimestamp DateTime?
+
+  patreonUserId             String?
+  patreonTier               String?
+  patreonUpdatedAtTimestamp DateTime?
 
   CustomLadderGroup                   CustomLadderGroup[]
   PoeCharacter                        PoeCharacter[]

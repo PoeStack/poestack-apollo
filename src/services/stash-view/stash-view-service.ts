@@ -200,13 +200,6 @@ export default class StashViewService {
             update: { timestamp: new Date() },
           });
 
-          /* await this.postgresService.prisma.stashViewItemSummary.deleteMany({
-            where: { userId: userId, stashId: tab.id },
-          });
-          await this.postgresService.prisma.stashViewItemSummary.createMany({
-            data: itemSummariesToWrite,
-          }); */
-
           indexProgress++;
           await this.updateJob(
             jobId,
@@ -301,7 +294,7 @@ export default class StashViewService {
 
   public async startAutomaticSnapshotJob() {
     for (;;) {
-      await new Promise((res) => setTimeout(res, 1000 * 60 * 2));
+      await new Promise((res) => setTimeout(res, 1000 * 30));
       try {
         const snapshotJobs =
           await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.findMany(

@@ -220,6 +220,15 @@ export class GqlUserProfile {
   @Field({ nullable: true })
   discordUserId: string;
 
+  @Field({ nullable: true })
+  discordUsername: string;
+
+  @Field({ nullable: true })
+  patreonUserId: string;
+
+  @Field({ nullable: true })
+  patreonTier: string;
+
   oAuthToken: string;
 }
 
@@ -1174,19 +1183,19 @@ export class GqlStashViewSettings {
   filterCheckedTabs: boolean;
 
   @Field({ nullable: true })
-  selectedTabId: string;
+  selectedTabId?: string;
   @Field(() => [String])
   checkedTabIds: string[];
   @Field(() => [String], { nullable: true })
-  checkedTags: string[];
+  checkedTags?: string[];
 
   @Field()
   valueOverridesEnabled: boolean;
   @Field(() => GraphQLJSONObject)
   itemGroupValueOverrides: Record<string, number>;
 
-  @Field()
-  selectedExporter: string;
+  @Field({ nullable: true })
+  selectedExporter?: string;
   @Field()
   exporterListedValueMultipler: number;
 
@@ -1194,11 +1203,18 @@ export class GqlStashViewSettings {
   excludedItemGroupIds: string[];
 
   @Field({ nullable: true })
-  ign: string;
+  minItemQuantity?: number;
   @Field({ nullable: true })
-  tftSelectedCategory: string;
+  minItemValue?: number;
   @Field({ nullable: true })
-  tftSelectedSubCategory: string;
+  minItemStackValue?: number;
+
+  @Field({ nullable: true })
+  ign?: string;
+  @Field({ nullable: true })
+  tftSelectedCategory?: string;
+  @Field({ nullable: true })
+  tftSelectedSubCategory?: string;
 }
 
 @ObjectType("OneClickMessageHistory")
@@ -1242,7 +1258,6 @@ export class GqlStashViewAutomaticSnapshotSettingsInput {
   @Field()
   durationBetweenSnapshotsSeconds: number;
 }
-
 
 @ObjectType("StashViewAutomaticSnapshotSettings")
 export class GqlStashViewAutomaticSnapshotSettings {

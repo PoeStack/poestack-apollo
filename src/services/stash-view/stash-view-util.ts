@@ -45,7 +45,7 @@ export class StashViewUtil {
       }
     }
 
-    if (settings.selectedExporter === "TFT-Bulk") {
+    if (["TFT-Bulk", "Forum Shop"].includes(settings.selectedExporter)) {
       value = value * ((settings.exporterListedValueMultipler ?? 100) / 100);
     }
 
@@ -70,6 +70,13 @@ export class StashViewUtil {
       (e) =>
         settings.searchString.trim().length === 0 ||
         e.searchableString.includes(settings.searchString.toLowerCase()),
+      (e) =>
+        (!settings.minItemQuantity || settings.minItemQuantity <= e.quantity) &&
+        (!settings.minItemStackValue ||
+          settings.minItemStackValue <
+            StashViewUtil.itemStackTotalValue(settings, e)) &&
+        (!settings.minItemValue ||
+          settings.minItemValue < StashViewUtil.itemValue(settings, e)),
       (e) =>
         !settings.excludedItemGroupIds ||
         !e.itemGroupHashString ||
