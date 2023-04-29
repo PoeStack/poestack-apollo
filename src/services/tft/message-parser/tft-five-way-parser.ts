@@ -1,88 +1,288 @@
+import { Events, Message, TextChannel } from "discord.js";
+import TftDiscordBotService from "../tft-discord-bot-service";
+import { singleton } from "tsyringe";
+import { Logger } from "../../../services/logger";
+import PostgresService from "../../../services/mongo/postgres-service";
+
+@singleton()
 export class TftFiveWayParser {
-  /* private parseDivs(line: string): number[] {
-    line = line.replaceAll("divs ", "div ");
-    line = line.replaceAll("divine ", "div ");
-    line = line.replaceAll("divines ", "div ");
-    line = line.replaceAll("<:divine:666765844541603861>", "div");
-    const matches = [...line.matchAll(/([\d.]+) *div/g)];
-    const divs = matches.map((e) => +e[1]);
-    return divs;
-  }
+  constructor(
+    private readonly tftDiscordBotService: TftDiscordBotService,
+    private readonly postgresService: PostgresService
+  ) {}
 
-  private fiveWayParse(m: Message): Record<string, any> | null {
-    const properties: any = {};
+  public parseFiveWay(content: string): {
+    priceDiv: number;
+    runs: number;
+    currentClients: number;
+    maxClients: number;
+    currentResetters: number;
+    maxResetters: number;
+    currentAurabots: number;
+    maxAurabots: number;
+    kills: number;
+    regions: string[];
+    ign: string;
+  } {
+    const body = content.toLocaleLowerCase();
+    const lines = body.split("\n");
 
-    const lines = m.content.split("\n").map((e) => e.toLowerCase().trim());
-    for (const line of lines) {
-      if (line.startsWith("region")) {
-        if (line.includes("eu")) {
-          properties["region"] = "eu";
-        } else if (line.includes("na")) {
-          properties["region"] = "na";
+    const priceDiv = this.extractNumber(lines[2], null, [
+      "div",
+      "divine",
+      "<:divine:666765844541603861>",
+    ]);
+    const runs = this.extractNumber(lines[2], null, ["run"]);
+    const clients = this.extractNumber(lines[4], ["client"], null).split("/");
+    const resetters = this.extractNumber(lines[4], ["resetter"], null).split(
+      "/"
+    );
+    const aurabots = this.extractNumber(lines[4], ["aurabot"], null).split("/");
+    const kills = this.extractNumber(
+      lines[3]?.replaceAll(",", "")?.replaceAll(".", ""),
+      null,
+      ["kill"]
+    );
+
+    const regions = [];
+    ["na", "kr", "sg", "jp", "eu", "ru", "ch"].forEach((e) => {
+      if (lines[1].includes(e)) {
+        regions.push(e);
+      }
+    });
+
+    const ign = lines[5]
+      .match(/@(\S*)/g)?.[0]
+      ?.slice(1)
+      .replaceAll("`", "");
+
+    const result = {
+      priceDiv: parseInt(priceDiv),
+      runs: parseInt(runs),
+      currentClients: parseInt(clients[0]),
+      maxClients: parseInt(clients[1]),
+      currentResetters: parseInt(resetters[0]),
+      maxResetters: parseInt(resetters[1]),
+      currentAurabots: parseInt(aurabots[0]),
+      maxAurabots: parseInt(aurabots[1]),
+      kills: kills ? parseInt(kills) : undefined,
+      regions: regions,
+      ign: ign,
+    };
+
+    function verify(keys: string[]) {
+      for (const key of keys) {
+        if (
+          result[key] === undefined ||
+          result[key] === null ||
+          Number.isNaN(result[key])
+        ) {
+          throw new Error(`Missing ${key}.`);
         }
       }
-
-      if (line.startsWith("price")) {
-        properties["priceDivs"] = this.parseDivs(line)?.[0];
-        properties["runs"] = +line.match(/([\d.]+) *run/)?.[1];
-      }
-
-      if (line.includes("@")) {
-        const ign = line.match(/@([\S.]+)/)?.[1];
-        properties.ign = ign;
-      }
     }
+
+    verify([
+      "ign",
+      "priceDiv",
+      "runs",
+      "currentClients",
+      "maxClients",
+      "currentResetters",
+      "maxResetters",
+      "currentAurabots",
+      "maxAurabots",
+    ]);
 
     if (
-      !properties.region ||
-      !properties.priceDivs ||
-      !properties.runs ||
-      !properties.ign
+      result.currentClients === result.maxClients &&
+      result.currentAurabots === result.maxAurabots &&
+      result.currentResetters === result.maxResetters
     ) {
-      return null;
+      throw new Error("Party already full.");
     }
 
-    return properties;
+    return result;
+  }
+
+  public async updateMessage(
+    authorId: string,
+    channelId: string,
+    messageId: string,
+    content: string | null
+  ) {
+    if (!content) {
+      await this.postgresService.prisma.tftLiveListing.updateMany({
+        where: {
+          messageId: messageId,
+        },
+        data: {
+          delistedAtTimestamp: new Date(),
+        },
+      });
+    }
+
+    try {
+      const parsedFiveway = this.parseFiveWay(content);
+      await this.postgresService.prisma.tftLiveListing.upsert({
+        where: {
+          messageId: messageId,
+        },
+        create: {
+          channelId: channelId,
+          messageId: messageId,
+          listedAtTimestamp: new Date(),
+          tag: "five-way",
+          properties: parsedFiveway,
+          delistedAtTimestamp: null,
+          body: content,
+          updatedAtTimestamp: new Date(),
+          userDiscordId: authorId,
+        },
+        update: {
+          body: content,
+          updatedAtTimestamp: new Date(),
+          userDiscordId: authorId,
+          properties: parsedFiveway,
+        },
+      });
+    } catch (error) {
+      await this.postgresService.prisma.tftLiveListing.updateMany({
+        where: {
+          messageId: messageId,
+        },
+        data: {
+          delistedAtTimestamp: new Date(),
+        },
+      });
+    }
   }
 
   public async start() {
-    this.client.once(Events.ClientReady, (c) => {
-      Logger.info(`Ready! Logged in as ${c.user.tag}`);
-    });
-    await this.client.login(process.env.DISCORD_BOT_TOKEN);
+    const activeListings =
+      await this.postgresService.prisma.tftLiveListing.findMany({
+        where: { delistedAtTimestamp: null },
+      });
 
-    const channel = (await this.client.channels.fetch(
-      "1049819931564310678"
-    )) as TextChannel;
-    for (;;) {
+    for (const listing of activeListings) {
+      const channel = await this.tftDiscordBotService.client.channels.fetch(
+        listing.channelId
+      );
+
       try {
-        const msgs = await channel.awaitMessages({
-          time: 10000,
-        });
-        if (msgs.size > 0) {
-          for (const [key, msg] of msgs) {
-            const properties = this.fiveWayParse(msg);
-
-            if (properties) {
-              const discordServiceListing: DiscordServiceMessageRecord = {
-                messageId: msg.id,
-                guildId: msg.guildId,
-                channelId: msg.channelId,
-                senderDiscordId: msg.author.id,
-                timestamp: new Date(),
-                type: "five-way",
-                properties: properties,
-              };
-
-              await this.postgresService.prisma.discordServiceMessageRecord.create(
-                { data: discordServiceListing }
-              );
-            }
-          }
-        }
+        const message = await (channel as TextChannel).messages.fetch(
+          listing.messageId
+        );
+        await this.updateMessage(
+          message.author.id,
+          listing.channelId,
+          listing.messageId,
+          message.content
+        );
       } catch (error) {
-        console.error("err", error);
+        console.log("err msg");
+        await this.updateMessage(
+          null,
+          listing.channelId,
+          listing.messageId,
+          null
+        );
       }
     }
-  } */
+
+    this.tftDiscordBotService.client.on(
+      Events.MessageDelete,
+      async (message) => {
+        try {
+          if (message.channelId === "1049819931564310678") {
+            await this.postgresService.prisma.tftLiveListing.updateMany({
+              where: { messageId: message.id },
+              data: {
+                delistedAtTimestamp: new Date(),
+              },
+            });
+          }
+        } catch (error) {
+          Logger.info("error deleting five-way message", error);
+        }
+      }
+    );
+
+    this.tftDiscordBotService.client.on(
+      Events.MessageUpdate,
+      async (oldMessage, newMessage) => {
+        try {
+          if (newMessage.channelId === "1049819931564310678") {
+            if (newMessage.author.bot) {
+              return;
+            }
+
+            console.log("Edited", newMessage.content);
+            await this.updateMessage(
+              newMessage.author.id,
+              newMessage.channelId,
+              newMessage.id,
+              newMessage.content
+            );
+          }
+        } catch (error) {
+          Logger.info("error deleting five-way message", error);
+        }
+      }
+    );
+
+    this.tftDiscordBotService.client.on(
+      Events.MessageCreate,
+      async (message) => {
+        try {
+          if (message.channelId === "1049819931564310678") {
+            if (message.author.bot) {
+              return;
+            }
+
+            await this.updateMessage(
+              message.author.id,
+              message.channelId,
+              message.id,
+              message.content
+            );
+          }
+        } catch (error) {
+          Logger.info("error parsing five-way message", error);
+        }
+      }
+    );
+  }
+
+  private extractNumber(
+    line: string,
+    prefixes: string[] | null,
+    suffixes: string[] | null
+  ): string | null {
+    if (prefixes) {
+      for (const prefix of prefixes) {
+        const match = line.match(
+          new RegExp(String.raw`${prefix}[s*,\s]+\s*([+-]?([0-9]*[.\/])?[0-9])`)
+        );
+        const selection = match?.[1];
+        if (selection) {
+          return selection;
+        }
+      }
+    } else if (suffixes) {
+      for (const suffix of suffixes) {
+        const match = line.match(
+          new RegExp(
+            String.raw`([+-]?([0-9]*[.\/])?[0-9]+)\s*${suffix}[s*,\s]*`
+          )
+        );
+        const selection = match?.[1];
+        if (selection) {
+          return selection;
+        }
+      }
+    }
+
+    return null;
+  }
 }

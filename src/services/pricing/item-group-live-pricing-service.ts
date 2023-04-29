@@ -10,7 +10,7 @@ export default class ItemGroupLivePricingService {
   private readonly listingsCache = new LRUCache<string, GqlItemGroupListing[]>({
     maxSize: 100_000 * 7,
     sizeCalculation: (value, key) => {
-      return value?.length;
+      return (value?.length ?? 0) + 1;
     },
 
     ttl: 1000 * 60 * 15,
@@ -36,20 +36,25 @@ export default class ItemGroupLivePricingService {
     }
     console.log("cache miss: " + cacheKey);
 
-    const listings: any[] = await this.postgresService.prisma
-      .$queryRaw`select * from (select max("listedAtTimestamp") as "listedAtTimestamp", "accountName", avg("listedValueChaos") as "listedValueChaos", sum("stackSize") as "stackSize" from "PublicStashListing" psl 
-    where "itemGroupHashString" = ${search.itemGroupHashString} and "league" = ${search.league} and "listedAtTimestamp" > now() at time zone 'utc' - INTERVAL '3 hour'
-    group by "accountName") x
-    order by x."listedValueChaos" asc`;
+    const listings: {
+      listedAtTimestamp: Date;
+      poeProfileName: string;
+      listedValue: number;
+      quantity: number;
+    }[] = await this.postgresService.prisma
+      .$queryRaw`select * from (select max("listedAtTimestamp") as "listedAtTimestamp", "poeProfileName", avg("listedValue") as "listedValue", sum("quantity") as "quantity" from "PoeLiveListing" psl 
+      where "itemGroupHashString" = ${search.itemGroupHashString} and "league" = ${search.league} and "listedAtTimestamp" > now() at time zone 'utc' - INTERVAL '3 hour'
+      group by "poeProfileName") x
+      order by x."listedValue" asc`;
 
     const filteredListings: GqlItemGroupListing[] = MathUtils.filterOutliersBy(
       listings,
-      (e) => Number(e.listedValueChaos)
+      (e) => Number(e.listedValue)
     ).map((e) => ({
-      accountName: e.accountName,
+      poeProfileName: e.poeProfileName,
       listedAtTimestamp: e.listedAtTimestamp,
-      stackSize: Number(e.stackSize),
-      listedValueChaos: Number(e.listedValueChaos),
+      quantity: Number(e.quantity),
+      listedValue: Number(e.listedValue),
     }));
 
     this.listingsCache.set(cacheKey, filteredListings);

@@ -240,6 +240,22 @@ export default class StashViewService {
     return jobId;
   }
 
+  public async oneClickPostMessage(
+    userId: string,
+    input: GqlStashViewSettings
+  ): Promise<string> {
+    input.selectedExporter = "TFT-Bulk";
+    const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
+    input.checkedTags = tftCategory!.tags;
+
+    const summary = await this.fetchStashViewTabSummary(userId, {
+      league: input.league,
+    });
+
+    const listingBody: string = tftCategory.export(summary, null, input);
+    return listingBody;
+  }
+
   public async oneClickPost(userId: string, input: GqlStashViewSettings) {
     input.selectedExporter = "TFT-Bulk";
     const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
@@ -304,6 +320,13 @@ export default class StashViewService {
         for (const job of snapshotJobs) {
           try {
             if (job.stashIds.length === 0) {
+              await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.delete(
+                {
+                  where: {
+                    userId_league: { userId: job.userId, league: job.league },
+                  },
+                }
+              );
               continue;
             }
 

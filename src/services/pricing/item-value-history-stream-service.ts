@@ -26,7 +26,7 @@ export default class ItemValueHistoryStreamService {
 
   private async fetchPublicStashActiveItemGroups(): Promise<ActiveItemGroup[]> {
     const groups: any[] = await this.postgresService.prisma.$queryRaw`
-    select "league", "itemGroupHashString", count from (select "league", "itemGroupHashString", count(*) from "PublicStashListing" psl
+    select "league", "itemGroupHashString", count from (select "league", "itemGroupHashString", count(*) from "PoeLiveListing" psl
     group by "itemGroupHashString", "league") x
     right join "ItemGroupInfo" ig on ig."hashString" = "itemGroupHashString"`;
     return groups;
@@ -82,39 +82,6 @@ export default class ItemValueHistoryStreamService {
     }
   }
 
-  private async findListingLookbackWindowOld(
-    itemGroup: ActiveItemGroup
-  ): Promise<number | null> {
-    let lookbackWindowHours = null;
-    for (const windowHours of [24, 12, 8, 6, 4, 2]) {
-      const interval = Prisma.raw(`'${windowHours} hour'`);
-      const result = await this.postgresService.prisma.$queryRaw`
-      select
-        count(*)
-      from
-        (
-        select
-          1
-        from
-          "PublicStashListing"
-        where
-          "itemGroupHashString" = ${itemGroup.itemGroupHashString}
-          and "league" = ${itemGroup.league}
-          and "listedAtTimestamp" > now() at time zone 'utc' - interval ${interval}
-        group by
-          "accountName" ) x`;
-      const listingCount = Number(result?.[0]?.count ?? 0);
-
-      if ((windowHours === 48 && listingCount >= 5) || listingCount >= 45) {
-        lookbackWindowHours = windowHours;
-      } else {
-        break;
-      }
-    }
-
-    return lookbackWindowHours;
-  }
-
   private findListingLookbackWindow(
     listings: { q: number; p: number; t: Date }[]
   ): number | null {
@@ -150,15 +117,15 @@ export default class ItemValueHistoryStreamService {
     const listings: { q: number; p: number; t: Date }[] = await this
       .postgresService.prisma.$queryRaw`
         select
-          sum("stackSize") as q,
-          avg("listedValueChaos") as p,
+          sum("quantity") as q,
+          avg("listedValue") as p,
           max("listedAtTimestamp") as t
         from
-          "PublicStashListing"
+          "PoeLiveListing"
         where
           "itemGroupHashString" = ${activeItemGroup.itemGroupHashString} and "league" = ${activeItemGroup.league}
         group by
-          "accountName"`;
+          "poeProfileName"`;
     sw.stop("pull");
 
     const lookbackWindowHours = this.findListingLookbackWindow(listings);
@@ -253,7 +220,7 @@ export default class ItemValueHistoryStreamService {
   private async runHourlyInsert(): Promise<number> {
     try {
       await this.postgresService.prisma.$executeRaw`
-      delete from "PublicStashListing" psl where "listedAtTimestamp" < now() at time zone 'utc' - INTERVAL '24 hour'`;
+      delete from "PoeLiveListing" psl where "listedAtTimestamp" < now() at time zone 'utc' - INTERVAL '24 hour'`;
 
       const activeItemGroups: ActiveItemGroup[] =
         await this.fetchPublicStashActiveItemGroups();

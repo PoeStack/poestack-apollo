@@ -229,6 +229,9 @@ export class GqlUserProfile {
   @Field({ nullable: true })
   patreonTier: string;
 
+  @Field({ nullable: true })
+  opaqueKey: string;
+
   oAuthToken: string;
 }
 
@@ -1239,14 +1242,14 @@ export class GqlOneClickMessageHistory {
 @ObjectType("ItemGroupListing")
 export class GqlItemGroupListing {
   @Field()
-  accountName: string;
+  poeProfileName: string;
 
   @Field()
   listedAtTimestamp: Date;
   @Field()
-  stackSize: number;
+  quantity: number;
   @Field()
-  listedValueChaos: number;
+  listedValue: number;
 }
 
 @InputType("StashViewAutomaticSnapshotSettingsInput")
@@ -1273,4 +1276,26 @@ export class GqlStashViewAutomaticSnapshotSettings {
   durationBetweenSnapshotsSeconds: number;
   @Field()
   nextSnapshotTimestamp: Date;
+}
+
+@ObjectType("TftLiveListing")
+export class GqlTftLiveListing {
+  @Field()
+  channelId: string;
+  @Field()
+  messageId: string;
+  @Field()
+  listedAtTimestamp: Date;
+  @Field()
+  updatedAtTimestamp: Date;
+  @Field({ nullable: true })
+  delistedAtTimestamp: Date;
+
+  @Field()
+  tag: string;
+  @Field()
+  body: string;
+
+  @Field(() => GraphQLJSONObject)
+  properties: any;
 }

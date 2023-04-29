@@ -341,7 +341,7 @@ export class StashViewExporters {
     } + `;
     return (
       (div > 0 ? divMsg : "") +
-      `${Math.round(totalChaos % divRate)}${useEmotes ? ":chaos:" : "c"}`
+      `${Math.round(totalChaos % divRate)}${useEmotes ? " :chaos:" : "c"}`
     );
   }
 }

@@ -4,41 +4,35 @@ import * as dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 
 import { StashViewResolver } from "./resolvers/stash-view-resolver";
+import { TftFiveWayParser } from "./services/tft/message-parser/tft-five-way-parser";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import express from "express";
 import http from "http";
 import cors from "cors";
-import json from "body-parser";
 
 import PublicStashStreamService from "./services/pricing/public-stash-stream-service";
 import UserActivityService from "./services/user-activity-service";
 import { buildSchema } from "type-graphql";
 import { container } from "tsyringe";
+import { TftLiveListingsResolver } from "./resolvers/tft-live-listings-resolver";
 import DiscordService from "./services/discord-service";
 import { InMemoryLRUCache } from "@apollo/utils.keyvaluecache";
-import { StashSnapshotResolver } from "./resolvers/stash-snapshot-resolver";
 import { UserResolver } from "./resolvers/user-resolver";
 import { PoeResolver } from "./resolvers/poe-resolver";
 import { TftOneClickResolver } from "./resolvers/tft-one-click-resolver";
 import { ItemGroupResolver } from "./resolvers/item-group-resolver";
 import { ItemGroupValueTimeseriesResolver } from "./resolvers/item-group-value-timeseries-resolver";
-import { StashSnapshotExportResolver } from "./resolvers/stash-snapshot-export-resolver";
 import { Logger } from "./services/logger";
 import { GlobalSearchResolver } from "./resolvers/global-search-resolver";
-import StashSnapshotService from "./services/snapshot/snapshot-service";
 import { CharacterSnapshotResolver } from "./resolvers/character-snapshot-resolver";
 import PobService from "./services/pob-service";
 import { PassiveTreeResolver } from "./resolvers/passive-tree-resolver";
 import { PassiveTreeService } from "./services/passive-tree/passive-tree-service";
 import CharacterSnapshotService from "./services/snapshot/character-snapshot-service";
 import { AtlasPassiveSnapshotResolve } from "./resolvers/atlas-passive-snapshot-resolver";
-import { TwitchService } from "./services/twitch-service";
 import { CustomLadderGroupResolver } from "./resolvers/custom-ladder-group-resolver";
-import { LeagueActivityService } from "./services/league-activity-service";
-import { PublicStashResolver } from "./resolvers/public-stash-resolver";
-
 import { RePoeService } from "./services/re-poe-service";
 import ItemGroupingService from "./services/pricing/item-grouping-service";
 import ItemValueHistoryStreamService from "./services/pricing/item-value-history-stream-service";
@@ -46,8 +40,7 @@ import CharacterVectorService from "./services/snapshot/character-vector-service
 import StashViewService from "./services/stash-view/stash-view-service";
 import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
-import TftOneClickService from "./services/tft/tft-one-click-service";
-import PoeNinjaAuditService from "./services/pricing/poe-ninja-audit";
+import PatreonService from "./services/patreon-service";
 
 dotenv.config({ path: ".env.local" });
 
@@ -93,19 +86,17 @@ process
   const schema = await buildSchema({
     resolvers: [
       PoeResolver,
-      StashSnapshotResolver,
       UserResolver,
       ItemGroupResolver,
       ItemGroupValueTimeseriesResolver,
-      StashSnapshotExportResolver,
       GlobalSearchResolver,
       CharacterSnapshotResolver,
       PassiveTreeResolver,
       AtlasPassiveSnapshotResolve,
       CustomLadderGroupResolver,
-      PublicStashResolver,
       StashViewResolver,
       TftOneClickResolver,
+      TftLiveListingsResolver,
     ],
     validate: false,
     container: {
@@ -124,10 +115,11 @@ process
   });
   await server.start();
   app.use(cors());
+  app.use(express.json());
 
   app.use(
     "/graphql",
-    json(),
+    express.json(),
     expressMiddleware(server, {
       context: contextGenerator,
     })
@@ -170,10 +162,6 @@ process
     container.resolve(PobService).startPobStream();
   }
 
-  if (process.env.START_LEAGUE_ACTIVITY_BACKGROUND_JOB === "true") {
-    container.resolve(LeagueActivityService).startSnapshotJob();
-  }
-
   if (process.env.START_POB_BACKGROUND_JOB === "true") {
     container
       .resolve(CharacterSnapshotService)
@@ -192,6 +180,10 @@ process
     await container.resolve(TftBlacklistService).pullBlacklist();
     container.resolve(TftBlacklistService).startBlacklistUpdateTask();
     container.resolve(TftDiscordBotService).start();
+  }
+
+  if (process.env.START_TFT_PARSER === "true") {
+    container.resolve(TftFiveWayParser).start();
   }
 
   //await container.resolve(StashViewService).test();

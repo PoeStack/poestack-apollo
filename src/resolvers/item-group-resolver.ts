@@ -35,7 +35,7 @@ export class ItemGroupResolver {
       league: league,
     });
 
-    const filteredListings = listings.filter((e) => e.stackSize >= minStock);
+    const filteredListings = listings.filter((e) => e.quantity >= minStock);
 
     const start = Math.floor(filteredListings.length * 0.02);
     return filteredListings.slice(start, start + 20);

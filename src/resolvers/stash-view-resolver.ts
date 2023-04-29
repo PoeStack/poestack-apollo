@@ -26,6 +26,14 @@ export class StashViewResolver {
     private readonly stashViewService: StashViewService
   ) {}
 
+  @Mutation(() => Boolean)
+  async deleteStashViewValueSnapshotSeries(@Ctx() ctx: PoeStackContext) {
+    await this.postgresService.prisma.stashViewValueSnapshot.deleteMany({
+      where: { userId: ctx.userId },
+    });
+    return true;
+  }
+
   @Mutation(() => String)
   async stashViewSnapshot(
     @Arg("input") input: GqlStashViewSnapshotInput,
@@ -37,6 +45,18 @@ export class StashViewResolver {
       input.stashIds
     );
     return jobId;
+  }
+
+  @Mutation(() => String)
+  async stashViewOneClickMessage(
+    @Arg("input") input: GqlStashViewSettings,
+    @Ctx() ctx: PoeStackContext
+  ) {
+    const messageBody = await this.stashViewService.oneClickPostMessage(
+      ctx.userId,
+      input
+    );
+    return messageBody + '\nusing https://poestack.com/tft/bulk-tool';
   }
 
   @Mutation(() => Boolean)

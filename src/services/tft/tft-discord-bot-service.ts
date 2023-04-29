@@ -18,8 +18,8 @@ export default class TftDiscordBotService {
   public client = new Client({
     intents: [
       GatewayIntentBits.Guilds,
-      /*       GatewayIntentBits.GuildMessages,
-      GatewayIntentBits.MessageContent, */
+      GatewayIntentBits.GuildMessages,
+      GatewayIntentBits.MessageContent,
     ],
   });
 
@@ -104,5 +104,4 @@ export default class TftDiscordBotService {
     const resp = await (channel as TextChannel).send(message);
     return resp;
   }
-
 }

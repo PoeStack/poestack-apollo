@@ -121,7 +121,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     export: StashViewExporters.exportLogbooksBulk,
     channels: {
       Crucible: {
-        channelId: "1091415912738992148",
+        channelId: "868188612376809513",
         timeout: 900,
         disableImages: true,
       },

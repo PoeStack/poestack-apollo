@@ -11,6 +11,8 @@ import { Logger } from "../logger";
 import { S3Service } from "../s3-service";
 import _ from "lodash";
 import { RePoeService } from "../re-poe-service";
+import { PoeLiveListing } from "@prisma/client";
+import { nanoid } from "nanoid";
 
 @singleton()
 export default class PublicStashStreamService {
@@ -37,26 +39,16 @@ export default class PublicStashStreamService {
     return result;
   }
 
-  private async updatePublicListingSummaries(
-    response: PoeApiPublicStashResponse
-  ) {
-    const updateDate = new Date();
-
+  private async writePoeLiveListings(response: PoeApiPublicStashResponse) {
     const sw = new StopWatch();
     sw.start("map");
-    const toWrite = {};
+    const listingsToWrite: Record<string, PoeLiveListing[]> = {};
 
     const stashUpdates = [...response.stashes];
     while (stashUpdates.length > 0) {
       const publicStashUpdate = stashUpdates.shift();
 
-      const stashSummary = {
-        _id: publicStashUpdate.id,
-        accountName: publicStashUpdate.accountName,
-        league: publicStashUpdate.league,
-        itemSummaries: [],
-      };
-
+      const listingsMap: Record<string, PoeLiveListing> = {};
       for (const item of publicStashUpdate.items) {
         if (item.lockedToAccount || item.lockedToCharacter) {
           continue;
@@ -76,62 +68,30 @@ export default class PublicStashStreamService {
                 continue;
               }
 
-              const summary = {
-                itemId: item.id,
-                itemGroupHashKey: group.key,
-                itemGroupHashString: group.hashString,
-                stackSize: item.stackSize ?? 1,
-                valueChaos: noteValue,
-              };
-              stashSummary.itemSummaries.push(summary);
+              let listing = listingsMap[group.hashString];
+              if (!listing) {
+                listingsMap[group.hashString] = {
+                  publicStashId: publicStashUpdate.id,
+                  itemGroupHashString: group.hashString,
+                  quantity: item.stackSize ?? 1,
+                  league: publicStashUpdate.league,
+                  listedAtTimestamp: new Date(),
+                  listedValue: noteValue,
+                  poeProfileName: publicStashUpdate.accountName,
+                };
+              } else {
+                listing.quantity += item.stackSize ?? 1;
+              }
             }
           }
         }
       }
 
-      toWrite[stashSummary._id] = stashSummary;
+      listingsToWrite[publicStashUpdate.id] = Object.values(listingsMap);
     }
     sw.stop("map");
 
-    await this.executeListingUpdates(toWrite);
-  }
-
-  private async updateStashListingRecords(response: PoeApiPublicStashResponse) {
-    const stashUpdates = response.stashes;
-    for (const chunks of _.chunk(stashUpdates, 20)) {
-      const promises = chunks.map(async (e) => {
-        if (e.league) {
-          await this.postgresService.prisma.poePublicStashUpdateRecord.upsert({
-            where: { publicStashId: e.id },
-            update: {
-              stashName: e.stash,
-              updatedAtTimestamp: new Date(),
-              delisted: false,
-              stashType: e.stashType,
-            },
-            create: {
-              league: e.league,
-              publicStashId: e.id,
-              poeProfileName: e.accountName,
-              createdAtTimestamp: new Date(),
-              updatedAtTimestamp: new Date(),
-              delisted: false,
-              stashName: e.stash,
-              stashType: e.stashType,
-            },
-          });
-        } else {
-          await this.postgresService.prisma.poePublicStashUpdateRecord.updateMany(
-            {
-              where: { publicStashId: e.id },
-              data: { delisted: true, updatedAtTimestamp: new Date() },
-            }
-          );
-        }
-      });
-
-      await Promise.all(promises);
-    }
+    await this.executeListingUpdates(listingsToWrite);
   }
 
   public async startWritingPublicStashUpdates() {
@@ -140,8 +100,7 @@ export default class PublicStashStreamService {
         if (this.updateQueue.length > 0) {
           const toWrite = this.updateQueue.shift();
 
-          await this.updateStashListingRecords(toWrite);
-          await this.updatePublicListingSummaries(toWrite);
+          await this.writePoeLiveListings(toWrite);
 
           await this.postgresService.prisma.genericParam.upsert({
             where: { key: "last_tracked_public_stash_change_id" },
@@ -213,27 +172,20 @@ export default class PublicStashStreamService {
     }
   }
 
-  private async executeListingUpdates(toWrite: any) {
+  private async executeListingUpdates(
+    toWrite: Record<string, PoeLiveListing[]>
+  ) {
     try {
-      const postgresEntries = Object.values(toWrite).flatMap((s: any) => {
-        return s.itemSummaries.map((e) => ({
-          publicStashId: s._id,
-          league: s.league,
-          accountName: s.accountName,
-          listedAtTimestamp: new Date(),
-          itemGroupHashKey: e.itemGroupHashKey,
-          itemGroupHashString: e.itemGroupHashString,
-          stackSize: e.stackSize,
-          listedValueChaos: e.valueChaos,
-        }));
-      });
+      const entires: PoeLiveListing[] = Object.values(toWrite).flatMap(
+        (e) => e
+      );
 
       const sw = new StopWatch(true);
       sw.start("delete");
 
-      const toDelete = _.uniq(postgresEntries.map((e) => e.publicStashId));
+      const toDelete = _.uniq(entires.map((e) => e.publicStashId));
       for (const chunk of _.chunk(toDelete, 5)) {
-        await this.postgresService.prisma.publicStashListing.deleteMany({
+        await this.postgresService.prisma.poeLiveListing.deleteMany({
           where: { publicStashId: { in: chunk } },
         });
       }
@@ -241,8 +193,8 @@ export default class PublicStashStreamService {
 
       sw.start("write");
       const writeResp =
-        await this.postgresService.prisma.publicStashListing.createMany({
-          data: postgresEntries,
+        await this.postgresService.prisma.poeLiveListing.createMany({
+          data: entires,
         });
       sw.stop("write");
       sw.stop();
