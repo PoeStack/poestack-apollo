@@ -337,10 +337,16 @@ model StashViewItemSummary {
 
 model TftLiveListing {
   channelId String
-  messageId String @id
+  messageId String
 
-  userDiscordId      String
-  listedAtTimestamp  DateTime
+  userDiscordId   String
+  userDiscordName String
+
+  userDiscordDisplayRole      String?
+  userDiscordDisplayRoleColor String?
+
+  userDiscordHighestRole String?
+
   updatedAtTimestamp DateTime
 
   tag        String
@@ -349,4 +355,6 @@ model TftLiveListing {
   body String
 
   delistedAtTimestamp DateTime?
+
+  @@id([userDiscordId, channelId])
 }

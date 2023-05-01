@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 
 import { StashViewResolver } from "./resolvers/stash-view-resolver";
-import { TftFiveWayParser } from "./services/tft/message-parser/tft-five-way-parser";
+import { TftChannelParserService } from "./services/tft/message-parser/tft-channel-parser-service";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
@@ -183,7 +183,7 @@ process
   }
 
   if (process.env.START_TFT_PARSER === "true") {
-    container.resolve(TftFiveWayParser).start();
+    container.resolve(TftChannelParserService).start();
   }
 
   //await container.resolve(StashViewService).test();

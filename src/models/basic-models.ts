@@ -1285,7 +1285,15 @@ export class GqlTftLiveListing {
   @Field()
   messageId: string;
   @Field()
-  listedAtTimestamp: Date;
+  userDiscordId: string;
+  @Field()
+  userDiscordName: string;
+  @Field({ nullable: true })
+  userDiscordDisplayRole?: string;
+  @Field({ nullable: true })
+  userDiscordHighestRole?: string;
+  @Field({ nullable: true })
+  userDiscordDisplayRoleColor?: string;
   @Field()
   updatedAtTimestamp: Date;
   @Field({ nullable: true })
@@ -1298,4 +1306,35 @@ export class GqlTftLiveListing {
 
   @Field(() => GraphQLJSONObject)
   properties: any;
+}
+
+@InputType("TftLiveListingSearchProperty")
+export class GqlTftLiveListingSearchProperty {
+  @Field({ defaultValue: "gte" })
+  type: string;
+
+  @Field()
+  key: string;
+
+  @Field()
+  value: string;
+}
+
+@InputType("TftLiveListingSearchPropertyGroup")
+export class GqlTftLiveListingSearchPropertyGroup {
+  @Field({ defaultValue: "and" })
+  type: string;
+
+  @Field(() => [GqlTftLiveListingSearchProperty])
+  filters: GqlTftLiveListingSearchProperty[];
+}
+
+
+@InputType("TftLiveListingSearch")
+export class GqlTftLiveListingSearch {
+  @Field()
+  tag: string;
+
+  @Field(() => [GqlTftLiveListingSearchPropertyGroup])
+  propertyFilterGroups: GqlTftLiveListingSearchPropertyGroup[];
 }

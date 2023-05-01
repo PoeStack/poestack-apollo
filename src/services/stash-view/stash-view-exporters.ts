@@ -336,12 +336,13 @@ export class StashViewExporters {
     }
 
     const div = Math.floor(totalChaos / divRate);
+    const chaos = Math.round(totalChaos % divRate);
     const divMsg = `${Math.floor(totalChaos / divRate)}${
       useEmotes ? " :divine:" : " div"
-    } + `;
+    }`;
     return (
       (div > 0 ? divMsg : "") +
-      `${Math.round(totalChaos % divRate)}${useEmotes ? " :chaos:" : "c"}`
+      (chaos > 0 ? ` + ${chaos}${useEmotes ? " :chaos:" : "c"}` : "")
     );
   }
 }

@@ -314,22 +314,16 @@ export default class StashViewService {
       try {
         const snapshotJobs =
           await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.findMany(
-            { where: { nextSnapshotTimestamp: { lte: new Date() } } }
+            {
+              where: {
+                nextSnapshotTimestamp: { lte: new Date() },
+                stashIds: { isEmpty: false },
+              },
+            }
           );
 
         for (const job of snapshotJobs) {
           try {
-            if (job.stashIds.length === 0) {
-              await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.delete(
-                {
-                  where: {
-                    userId_league: { userId: job.userId, league: job.league },
-                  },
-                }
-              );
-              continue;
-            }
-
             const jobId = `automatic__${nanoid()}`;
             await this.postgresService.prisma.stashViewSnapshotJob.create({
               data: {

@@ -24,9 +24,6 @@ export default class TftDiscordBotService {
   });
 
   public async start() {
-    this.client.once(Events.ClientReady, (c) => {
-      Logger.info(`Ready! Logged in as ${c.user.tag}`);
-    });
     await this.client.login(process.env.DISCORD_POESTACK_BOT_TOKEN);
   }
 

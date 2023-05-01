@@ -399,13 +399,15 @@ export class LogbookGroupIdentifier implements ItemGroupIdentifier {
 }
 
 export class CompassGroupIdentifier implements ItemGroupIdentifier {
-  displayOverrides = {};
+  public static DISPLAY_OVERRIDES: Record<string, string> = {};
 
   constructor() {
     Object.entries(
       JSON.parse(fs.readFileSync("data/tft/tft-compas.json").toString())
     ).forEach((e) => {
-      this.displayOverrides[e[0]?.toLowerCase().replace("sextant ", "")] = e[1];
+      CompassGroupIdentifier.DISPLAY_OVERRIDES[
+        e[0]?.toLowerCase().replace("sextant ", "")
+      ] = e[1] as string;
     });
   }
 
@@ -430,7 +432,7 @@ export class CompassGroupIdentifier implements ItemGroupIdentifier {
       const group: InternalGroup = {
         key: otherMods + " compass",
         tag: "compass",
-        displayOverride: this.displayOverrides[otherMods],
+        displayOverride: CompassGroupIdentifier.DISPLAY_OVERRIDES[otherMods],
         hashProperties: {
           uses: parseInt(usesMod),
         },

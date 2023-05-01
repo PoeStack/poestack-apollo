@@ -4,11 +4,11 @@ import { Logger } from "./logger";
 
 @singleton()
 export default class UserActivityService {
-  constructor(private readonly postgresService: PostgresService) { }
+  constructor(private readonly postgresService: PostgresService) {}
 
   public async onRequest(userId: string) {
     try {
-      if (userId) {
+      if (userId && Math.floor(Math.random() * 100) <= 10) {
         const date = new Date();
         await this.postgresService.prisma.userProfile.updateMany({
           where: { userId },
