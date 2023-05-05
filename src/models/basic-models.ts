@@ -1242,9 +1242,6 @@ export class GqlOneClickMessageHistory {
 @ObjectType("ItemGroupListing")
 export class GqlItemGroupListing {
   @Field()
-  poeProfileName: string;
-
-  @Field()
   listedAtTimestamp: Date;
   @Field()
   quantity: number;

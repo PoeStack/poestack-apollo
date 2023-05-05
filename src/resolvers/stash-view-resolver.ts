@@ -59,8 +59,11 @@ export class StashViewResolver {
     @Arg("input") input: GqlStashViewSettings,
     @Ctx() ctx: PoeStackContext
   ) {
+    const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
+      { where: { userId: ctx.userId } }
+    );
     const messageBody = await this.stashViewService.oneClickPostMessage(
-      ctx.userId,
+      user.opaqueKey,
       input
     );
     return messageBody + "\nusing https://poestack.com/tft/bulk-tool";
@@ -162,24 +165,19 @@ export class StashViewResolver {
     @Ctx() ctx: PoeStackContext,
     @Arg("search") search: GqlStashViewStashSummarySearch
   ) {
-    let userId = ctx.userId;
-
     if (!search.opaqueKey) {
       throw new Error("removed.");
     }
 
-    if (search.opaqueKey) {
-      const user =
-        await this.postgresService.prisma.userProfile.findFirstOrThrow({
-          where: { opaqueKey: search.opaqueKey },
-        });
-      userId = user.userId;
-    }
-
     const summary = await this.stashViewService.fetchStashViewTabSummary(
-      userId,
+      search.opaqueKey,
       search
     );
     return summary;
+  }
+
+  @Query(() => GqlStashViewStashSummary)
+  async stashViewItemSummary(@Ctx() ctx: PoeStackContext) {
+    return {};
   }
 }

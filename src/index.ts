@@ -40,6 +40,7 @@ import StashViewService from "./services/stash-view/stash-view-service";
 import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
 import { PoeStackResolver } from "./resolvers/poestack-resolver";
+import LivePricingStreamService from "./services/live-pricing/live-pricing-service";
 
 dotenv.config({ path: ".env.local" });
 

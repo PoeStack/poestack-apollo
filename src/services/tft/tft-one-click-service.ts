@@ -128,7 +128,7 @@ export default class TftOneClickService {
       );
       throw error;
     }
-
+    
     if (!bulkListing.test) {
       await this.rateLimitService.updateLimit(
         rateLimitKey,

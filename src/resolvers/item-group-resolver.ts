@@ -3,8 +3,7 @@ import PostgresService from "../services/mongo/postgres-service";
 import { singleton } from "tsyringe";
 import ItemValueHistoryService from "../services/pricing/item-value-history-service";
 import { GqlItemGroupListing } from "../models/basic-models";
-import MathUtils from "../services/utils/math-utils";
-import ItemGroupLivePricingService from "../services/pricing/item-group-live-pricing-service";
+import LiveListingService from "../services/live-pricing/live-listing-service";
 
 @Resolver()
 @singleton()
@@ -12,7 +11,7 @@ export class ItemGroupResolver {
   constructor(
     private readonly postgresService: PostgresService,
     private readonly itemValueHistoryService: ItemValueHistoryService,
-    private readonly itemGroupLivePricingService: ItemGroupLivePricingService
+    private readonly livePricingService: LiveListingService
   ) {}
 
   @Query(() => [String])
@@ -30,7 +29,7 @@ export class ItemGroupResolver {
     @Arg("hashString") hashString: string,
     @Arg("minStock", { nullable: true, defaultValue: 0 }) minStock: number = 0
   ) {
-    const listings = await this.itemGroupLivePricingService.fetchListings({
+    const listings = await this.livePricingService.fetchListings({
       itemGroupHashString: hashString,
       league: league,
     });

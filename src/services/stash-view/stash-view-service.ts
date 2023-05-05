@@ -308,7 +308,7 @@ export default class StashViewService {
   }
 
   public async oneClickPostMessage(
-    userId: string,
+    opaqueKey: string,
     input: GqlStashViewSettings
   ): Promise<string> {
     input.selectedExporter = "TFT-Bulk";
@@ -322,7 +322,7 @@ export default class StashViewService {
       input.valueOverridesEnabled = false;
     }
 
-    const summary = await this.fetchStashViewTabSummary(userId, {
+    const summary = await this.fetchStashViewTabSummary(opaqueKey, {
       league: input.league,
     });
 
@@ -331,10 +331,12 @@ export default class StashViewService {
   }
 
   public async oneClickPost(userId: string, input: GqlStashViewSettings) {
-    const listingBody: string = await this.oneClickPostMessage(userId, input);
-
     const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
       { where: { userId: userId } }
+    );
+    const listingBody: string = await this.oneClickPostMessage(
+      user.opaqueKey,
+      input
     );
 
     const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
@@ -356,6 +358,13 @@ export default class StashViewService {
         test: false,
       }
     );
+
+    if (resp?.messageId) {
+      Logger.info("sent tft-one-click", {
+        userId: userId,
+        tftSelectedCategory: input.tftSelectedCategory,
+      });
+    }
 
     const listingHistory: OneClickMessageHistory = {
       messageId: resp.messageId,
@@ -439,17 +448,16 @@ export default class StashViewService {
   }
 
   public async fetchStashViewTabSummary(
-    appliedUserId: string,
-    search: GqlStashViewStashSummarySearch,
-    mappItemGroups: boolean = true
+    opaqueKey: string,
+    search: GqlStashViewStashSummarySearch
   ): Promise<GqlStashViewStashSummary> {
     const summaryJson = await this.s3Service.getJson(
       "poe-stack-stash-view",
-      `tabs/${appliedUserId}/${search.league}/summary.json`
+      `stash/${opaqueKey}/${search.league}/summary.json`
     );
     const itemGroupsJson = await this.s3Service.getJson(
       "poe-stack-stash-view",
-      `tabs/${appliedUserId}/${search.league}/summary_item_groups.json`
+      `stash/${opaqueKey}/${search.league}/summary_item_groups.json`
     );
 
     const items: any[] = Object.values(summaryJson?.tabs ?? {}).flatMap(
