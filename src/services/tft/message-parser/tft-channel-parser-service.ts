@@ -23,7 +23,6 @@ export class TftChannelParserService {
     "Sacred Service Providers",
     "Ascended Service Providers",
     "Exalted Service Providers",
-    "Awakened TFT Friends",
     "Awakened Service Providers",
     "Trusted Service Providers",
   ];
@@ -69,25 +68,27 @@ export class TftChannelParserService {
     try {
       const parsedFiveway = parser.parse(message.content);
 
+      let author = message.author;
+      let roles = message.member.roles;
+      if (author?.id === "1081272164474441728") {
+        author = message.mentions.users.first();
+        const guildMember = await message.guild.members.fetch(author.id);
+        roles = guildMember?.roles;
+      }
+
       let displayRole: Role | null = null;
-      message.member?.roles?.cache?.forEach((role) => {
+      roles?.cache?.forEach((role) => {
         if (this.DISPLAY_ROLES.includes(role.name)) {
           displayRole = role;
         }
       });
-
-      let author = message.author;
-      if (author?.id === "1081272164474441728") {
-        author = message.mentions.users.at(0);
-      }
-
       const listing: TftLiveListing = {
         userDiscordName: author?.username,
         channelId: message.channelId,
         messageId: messageId,
         userDiscordDisplayRole: displayRole?.name,
         userDiscordDisplayRoleColor: displayRole?.hexColor,
-        userDiscordHighestRole: message.member?.roles?.highest?.name,
+        userDiscordHighestRole: roles?.highest?.name,
         tag: parser.tag,
         delistedAtTimestamp: null,
         body: message.content,
@@ -142,7 +143,7 @@ export class TftChannelParserService {
 
         await this.updateMessage(listing.messageId, message, parser);
       } catch (error) {
-        console.log("err msg");
+        Logger.info("err msg");
         await this.updateMessage(listing.messageId, null, null);
       }
     }

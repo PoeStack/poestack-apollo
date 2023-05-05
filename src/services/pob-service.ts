@@ -96,13 +96,13 @@ export default class PobService {
         killed = false;
 
         pob.stderr.on("data", (data) => {
-          console.log(`stderr: ${data}`);
+          Logger.info(`stderr: ${data}`);
           this.discord.ping(`stderr in POB ${data}`);
         });
 
         pob.on("error", (error) => {
           killed = true;
-          console.log(`error: ${error?.message}`);
+          Logger.info(`error: ${error?.message}`);
           this.discord.ping(`error in POB ${error?.message}`);
         });
 
@@ -111,20 +111,20 @@ export default class PobService {
           crlfDelay: Infinity,
         });
         rl.on("line", (line: string) => {
-          console.log(`pob line: ${line}`);
+          Logger.debug(`pob line: ${line}`);
         });
 
         pob.on("close", (code) => {
           killed = true;
           this.discord.ping("POB closed");
-          console.log(`child process exited with code ${code}`);
+          Logger.info(`child process exited with code ${code}`);
         });
 
         while (!killed) {
           if (this.pobQueue.length > 0) {
             const jobId = this.pobQueue.shift();
             const x = pob.stdin.write(`${jobId}\n`);
-            console.log("starting job: " + jobId + " " + x);
+            Logger.info("starting job: " + jobId + " " + x);
           }
           await new Promise((res) => setTimeout(res, 100));
         }
@@ -175,7 +175,7 @@ export default class PobService {
 
     let attempt = 0;
     while (attempt < 100 && !fs.existsSync(completeFilePath)) {
-      console.log("waiting for pob");
+      Logger.debug("waiting for pob");
       await new Promise((res) => setTimeout(res, 100));
       attempt++;
     }

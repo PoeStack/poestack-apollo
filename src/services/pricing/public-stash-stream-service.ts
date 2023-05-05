@@ -199,7 +199,7 @@ export default class PublicStashStreamService {
       sw.stop("write");
       sw.stop();
 
-      Logger.info(
+      Logger.debug(
         `pg overall ${sw.elapsedMS()}ms [delete(${
           toDelete.length
         }) ${sw.elapsedMS("delete")}ms write(${writeResp.count}) ${sw.elapsedMS(

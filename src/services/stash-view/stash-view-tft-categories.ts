@@ -4,6 +4,7 @@ import { StashViewExporters } from "./stash-view-exporters";
 export interface TftCategory {
   tags: string[];
   export: any;
+  enableOverrides?: boolean;
   channels: Record<
     string,
     { channelId: string; timeout: number; disableImages?: boolean }
@@ -15,6 +16,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   compasses: {
     tags: ["compass"],
     export: StashViewExporters.exportTftCompassesBulk,
+    enableOverrides: true,
     channels: {
       Crucible: {
         channelId: "939791301371654185",
@@ -53,6 +55,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   },
   heist: {
     tags: ["contract", "blueprint"],
+    enableOverrides: true,
     export: StashViewExporters.exportTftHeistBulk,
     channels: {
       Crucible: {
@@ -69,6 +72,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   },
   beast: {
     tags: ["beast"],
+    enableOverrides: true,
     export: StashViewExporters.exportTftBeastBulk,
     channels: {
       Crucible: {
@@ -118,6 +122,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   },
   logbooks: {
     tags: ["logbook"],
+    enableOverrides: true,
     export: StashViewExporters.exportLogbooksBulk,
     channels: {
       Crucible: {

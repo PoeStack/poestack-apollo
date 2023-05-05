@@ -1,3 +1,4 @@
+import { Logger } from './../../logger';
 import { singleton } from "tsyringe";
 import fetch from "node-fetch";
 
@@ -35,7 +36,7 @@ export default class TftBlacklistService {
       const cols = line.split(",");
       blacklistedUserProfileNames.push(cols[0]?.toLowerCase()?.slice(1, -1));
     }
-    console.log(
+    Logger.info(
       `loaded ${blacklistedUserProfileNames.length} blacklisted users`
     );
     this.blockedUserProfileNames = new Set(blacklistedUserProfileNames);
@@ -47,7 +48,7 @@ export default class TftBlacklistService {
       try {
         await this.pullBlacklist();
       } catch (error) {
-        console.log("error loading blacklist", error);
+        Logger.info("error loading blacklist", error);
       }
     }
   }

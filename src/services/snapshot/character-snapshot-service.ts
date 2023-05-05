@@ -124,7 +124,8 @@ export default class CharacterSnapshotService {
           .$queryRaw`
           select pc.* from "PoeCharacter" pc 
           left join "UserProfile" up on pc."userId" = up."userId"
-          where up."oAuthToken" is not null and "lastSnapshotTimestamp" is null`;
+          where up."oAuthToken" is not null and "lastSnapshotTimestamp" is null
+          limit ${take}`;
 
         const characters: PoeCharacter[] = await this.postgresService.prisma
           .$queryRaw`
@@ -134,9 +135,9 @@ export default class CharacterSnapshotService {
           order by "lastSnapshotTimestamp" asc
           limit ${take}`;
 
-        Logger.info(
-          `pulled new characters ${characters.length} ${characters[0]?.id}`
-        );
+        Logger.info(`character snapshot job pull`, {
+          charactersNew: charactersNew?.length,
+        });
 
         for (const character of _.shuffle([...charactersNew, ...characters])) {
           try {
@@ -388,7 +389,7 @@ export default class CharacterSnapshotService {
               Logger.info("skipping snapshot for " + characterId);
             }
           } else if (characterData?.id) {
-            console.log(
+            Logger.info(
               "character id did not match expected id, this character has likely been deleted: " +
                 characterData?.id
             );
@@ -403,7 +404,7 @@ export default class CharacterSnapshotService {
       where: { id: characterId },
       data: characterUpdate,
     });
-    console.log(`took snapshot ${characterId} : ${res}`);
+    Logger.info(`took snapshot ${characterId} : ${res}`);
     return res;
   }
 

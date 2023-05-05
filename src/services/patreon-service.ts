@@ -1,4 +1,4 @@
-import { json } from "body-parser";
+import { Logger } from './logger';
 import { singleton } from "tsyringe";
 import fetch from "node-fetch";
 
@@ -19,7 +19,7 @@ export default class PatreonService {
       lifetimeSupportCents: e.attributes.lifetime_support_cents,
     }));
 
-    console.log(members);
+    Logger.info(members);
   }
 
   public async refreshCreatorToken(): Promise<string> {

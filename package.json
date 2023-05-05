@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@apollo/server": "4.3.0",
+    "@axiomhq/axiom-node": "0.11.0",
     "@prisma/client": "4.9.0",
     "@types/jsonwebtoken": "9.0.0",
     "@types/lodash": "4.14.191",
@@ -25,6 +26,7 @@
     "discord.js": "14.9.0",
     "dotenv": "16.0.3",
     "express": "4.18.2",
+    "express-winston": "^4.2.0",
     "follow-redirects": "1.15.2",
     "graphql": "16.6.0",
     "graphql-fields": "2.0.3",
@@ -44,6 +46,7 @@
     "type-graphql": "2.0.0-beta.1",
     "typegraphql-prisma": "0.23.3",
     "typescript": "*",
+    "winston": "3.8.2",
     "zlib": "1.0.5"
   },
   "devDependencies": {

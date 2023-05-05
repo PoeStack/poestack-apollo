@@ -16,6 +16,11 @@ export class TftLiveListingsResolver {
 
   @Query(() => [GqlTftLiveListing])
   async tftLiveListings(@Ctx() ctx: PoeStackContext) {
+    if (!ctx?.userId) {
+      throw new Error("Not authorized.");
+    }
+
+
     const tftLiveListings =
       await this.postgresService.prisma.tftLiveListing.findMany({
         where: {
@@ -33,15 +38,19 @@ export class TftLiveListingsResolver {
     @Ctx() ctx: PoeStackContext,
     @Arg("search") search: GqlTftLiveListingSearch
   ) {
+    if (!ctx?.userId) {
+      throw new Error("Not authorized.");
+    }
+
     const globalSearchConditions: Prisma.Sql[] = [
-      Prisma.sql`tll."tag" = ${search.tag}`,
+      Prisma.sql`tll."tag" = ${search.tag} and tll."updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '30 mins'`,
     ];
 
     for (const filterGroup of search.propertyFilterGroups) {
       const subSearchConditions: Prisma.Sql[] = [];
       for (const filter of filterGroup.filters) {
         const jsonB = `{${filter.key}}`;
-        const filterSql = Prisma.sql`(tll.properties#>${jsonB}::text[])::int > ${parseInt(
+        const filterSql = Prisma.sql`(tll.properties#>${jsonB}::text[])::int >= ${parseInt(
           filter.value
         )}::int`;
         subSearchConditions.push(filterSql);
@@ -59,7 +68,8 @@ export class TftLiveListingsResolver {
 
     const tftLiveListings = await this.postgresService.prisma.$queryRaw`
     select * from "TftLiveListing" tll
-    ${where}`;
+    ${where}
+    order by tll."updatedAtTimestamp" desc`;
     return tftLiveListings;
   }
 }

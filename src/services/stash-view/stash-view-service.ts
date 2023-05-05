@@ -37,9 +37,34 @@ export default class StashViewService {
   public async updateTabsInternal(
     jobId: string,
     userId: string,
+    userOpaqueKey: string,
     league: string,
-    initialTabs: string[]
+    initialTabs: string[],
+    delayMs: number
   ) {
+    const now = new Date();
+
+    const cachedStashSummary =
+      (await this.s3Service.getJson(
+        "poe-stack-stash-view",
+        `tabs/${userId}/${league}/summary.json`
+      )) ?? {};
+
+    const stashSummary: {
+      updatedAtTimestamp: Date;
+      tabs: Record<
+        string,
+        {
+          stashTotalValue: number;
+          updatedAtTimestamp: Date;
+          itemSummaries: StashViewItemSummary[];
+        }
+      >;
+    } = {
+      tabs: { ...(cachedStashSummary?.tabs ?? {}) },
+      updatedAtTimestamp: now,
+    };
+
     let indexProgress = 0;
 
     await this.updateJob(jobId, "Fetching token.");
@@ -61,6 +86,8 @@ export default class StashViewService {
     );
     const uniqStashTabIds = _.uniq(tabIds);
     for (const stashTabId of uniqStashTabIds) {
+      await new Promise((res) => setTimeout(res, delayMs));
+
       while (true) {
         const { data: tab, rateLimitedForMs } = await this.poeApi.fetchStashTab(
           authToken,
@@ -87,7 +114,7 @@ export default class StashViewService {
           }
 
           tab["userId"] = userId;
-          tab["updatedAtTimestamp"] = new Date();
+          tab["updatedAtTimestamp"] = now;
 
           const itemSummariesToWrite: StashViewItemSummary[] = [];
           for (const item of tab.items) {
@@ -162,6 +189,17 @@ export default class StashViewService {
             `tabs/${userId}/${league}/${tab.id}.json`,
             tab
           );
+          await this.s3Service.putJson(
+            "poe-stack-stash-view",
+            `stash/${userOpaqueKey}/${league}/tabs/${tab.id}.json`,
+            tab
+          );
+
+          stashSummary.tabs[tab.id] = {
+            stashTotalValue: stashTotalValue,
+            itemSummaries: itemSummariesToWrite,
+            updatedAtTimestamp: now,
+          };
 
           await this.postgresService.prisma.stashViewValueSnapshot.create({
             data: {
@@ -169,13 +207,9 @@ export default class StashViewService {
               userId: userId,
               league: league,
               stashId: stashTabId,
-              timestamp: new Date(),
+              timestamp: now,
               value: stashTotalValue,
             },
-          });
-          itemSummariesToWrite.forEach((e) => {
-            delete e["valueChaos"];
-            delete e["totalValueChaos"];
           });
 
           await this.s3Service.putJson(
@@ -195,9 +229,9 @@ export default class StashViewService {
               league: league,
               stashId: tab.id,
               userId: userId,
-              timestamp: new Date(),
+              timestamp: now,
             },
-            update: { timestamp: new Date() },
+            update: { timestamp: now },
           });
 
           indexProgress++;
@@ -211,6 +245,38 @@ export default class StashViewService {
       }
     }
 
+    await this.s3Service.putJson(
+      "poe-stack-stash-view",
+      `tabs/${userId}/${league}/summary.json`,
+      stashSummary
+    );
+    await this.s3Service.putJson(
+      "poe-stack-stash-view",
+      `stash/${userOpaqueKey}/${league}/summary.json`,
+      stashSummary
+    );
+
+    const uniqItemGroupIds = _.uniq(
+      Object.values(stashSummary.tabs)
+        .flatMap((e) => e.itemSummaries)
+        .map((e) => e.itemGroupHashString)
+    ).filter((e) => !!e);
+    const itemGroups = await this.postgresService.prisma.itemGroupInfo.findMany(
+      { where: { hashString: { in: uniqItemGroupIds } } }
+    );
+    const itemGroupMap = {};
+    itemGroups.forEach((e) => (itemGroupMap[e.hashString] = e));
+    await this.s3Service.putJson(
+      "poe-stack-stash-view",
+      `tabs/${userId}/${league}/summary_item_groups.json`,
+      { itemGroups: itemGroupMap, updatedAtTimestamp: now }
+    );
+    await this.s3Service.putJson(
+      "poe-stack-stash-view",
+      `stash/${userOpaqueKey}/${league}/summary_item_groups.json`,
+      { itemGroups: itemGroupMap, updatedAtTimestamp: now }
+    );
+
     await this.updateJob(jobId, `Complete.`);
   }
 
@@ -223,6 +289,7 @@ export default class StashViewService {
 
   public async takeSnapshot(
     userId: string,
+    userOpaqueKey: string,
     league: string,
     tabIds: string[]
   ): Promise<string> {
@@ -236,7 +303,7 @@ export default class StashViewService {
         status: "starting",
       },
     });
-    this.updateTabsInternal(jobId, userId, league, tabIds);
+    this.updateTabsInternal(jobId, userId, userOpaqueKey, league, tabIds, 50);
     return jobId;
   }
 
@@ -248,6 +315,13 @@ export default class StashViewService {
     const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
     input.checkedTags = tftCategory!.tags;
 
+    if (!tftCategory.enableOverrides && input.valueOverridesEnabled) {
+      throw new Error("Overrides cannot be used in this channel.");
+    }
+    if (!tftCategory.enableOverrides) {
+      input.valueOverridesEnabled = false;
+    }
+
     const summary = await this.fetchStashViewTabSummary(userId, {
       league: input.league,
     });
@@ -257,20 +331,13 @@ export default class StashViewService {
   }
 
   public async oneClickPost(userId: string, input: GqlStashViewSettings) {
-    input.selectedExporter = "TFT-Bulk";
-    const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
-    input.checkedTags = tftCategory!.tags;
+    const listingBody: string = await this.oneClickPostMessage(userId, input);
 
     const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
       { where: { userId: userId } }
     );
 
-    const summary = await this.fetchStashViewTabSummary(userId, {
-      league: input.league,
-    });
-
-    const listingBody: string = tftCategory.export(summary, null, input);
-
+    const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
     const targetChannel = tftCategory.channels[input.league];
     const resp = await this.tftOneClickService.createBulkListing2(
       targetChannel.channelId,
@@ -348,11 +415,18 @@ export default class StashViewService {
               }
             );
 
+            const user =
+              await this.postgresService.prisma.userProfile.findFirstOrThrow({
+                where: { userId: job.userId },
+              });
+
             await this.updateTabsInternal(
               jobId,
-              job.userId,
+              user.userId,
+              user.opaqueKey,
               job.league,
-              job.stashIds
+              job.stashIds,
+              1000
             );
           } catch (error) {
             Logger.error("error in automatic stash snapshot job", job, error);
@@ -369,47 +443,29 @@ export default class StashViewService {
     search: GqlStashViewStashSummarySearch,
     mappItemGroups: boolean = true
   ): Promise<GqlStashViewStashSummary> {
-    const validTabs =
-      await this.postgresService.prisma.stashViewTabSnapshotRecord.findMany({
-        where: { userId: appliedUserId, league: search.league },
-      });
-
-    const s3Promises = validTabs.map(async (tab) => {
-      const snapshot = await this.s3Service.getJson(
-        "poe-stack-stash-view",
-        `tabs/${appliedUserId}/${search.league}/${tab.stashId}_summary.json`
-      );
-      return snapshot?.itemSummaries;
-    });
-
-    const items = (await Promise.all(s3Promises)).flatMap((e) => e);
-
-    await this.itemValueHistoryService.injectItemPValue(items, {
-      league: search.league,
-      valuationStockInfluence: "smart-influnce",
-      valuationTargetPValue: "p10",
-    });
-
-    const uniqItemGroupIds = _.uniq(
-      items.map((e) => e.itemGroupHashString)
-    ).filter((e) => !!e);
-    const itemGroups = await this.postgresService.prisma.itemGroupInfo.findMany(
-      { where: { hashString: { in: uniqItemGroupIds } } }
+    const summaryJson = await this.s3Service.getJson(
+      "poe-stack-stash-view",
+      `tabs/${appliedUserId}/${search.league}/summary.json`
+    );
+    const itemGroupsJson = await this.s3Service.getJson(
+      "poe-stack-stash-view",
+      `tabs/${appliedUserId}/${search.league}/summary_item_groups.json`
     );
 
-    if (mappItemGroups) {
-      (items as GqlStashViewItemSummary[]).forEach((e) => {
-        if (e.itemGroupHashString) {
-          e.itemGroup = (itemGroups as unknown as GqlItemGroup[]).find(
-            (g) => g.hashString === e.itemGroupHashString
-          );
-        }
-      });
-    }
-
-    return {
-      items: items ?? [],
-      itemGroups: (itemGroups as unknown as GqlItemGroup[]) ?? [],
+    const items: any[] = Object.values(summaryJson?.tabs ?? {}).flatMap(
+      (e: any) => e.itemSummaries
+    );
+    const mapping = {
+      itemGroups: Object.values(itemGroupsJson.itemGroups),
+      items: items.map((e) => ({
+        ...e,
+        league: search.league,
+        itemGroup: e.itemGroupHashString
+          ? itemGroupsJson.itemGroups[e.itemGroupHashString]
+          : null,
+      })),
     };
+
+    return mapping as GqlStashViewStashSummary;
   }
 }

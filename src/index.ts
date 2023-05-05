@@ -13,7 +13,6 @@ import http from "http";
 import cors from "cors";
 
 import PublicStashStreamService from "./services/pricing/public-stash-stream-service";
-import UserActivityService from "./services/user-activity-service";
 import { buildSchema } from "type-graphql";
 import { container } from "tsyringe";
 import { TftLiveListingsResolver } from "./resolvers/tft-live-listings-resolver";
@@ -40,7 +39,7 @@ import CharacterVectorService from "./services/snapshot/character-vector-service
 import StashViewService from "./services/stash-view/stash-view-service";
 import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
-import PatreonService from "./services/patreon-service";
+import { PoeStackResolver } from "./resolvers/poestack-resolver";
 
 dotenv.config({ path: ".env.local" });
 
@@ -76,12 +75,28 @@ process
         Logger.info("failed to decode jwt");
       }
     }
-
-    await container.resolve(UserActivityService).onRequest(jwtData.userId);
     return jwtData;
   };
 
   const app = express();
+  const myPlugin = {
+    async requestDidStart(requestContext) {
+      const start = Date.now();
+      return {
+        async willSendResponse(requestContext) {
+          Logger.info("gql response", {
+            userId: requestContext?.contextValue?.userId,
+            operationName: requestContext?.operationName,
+            duration: Date.now() - start,
+            reqIp: requestContext?.request?.http?.headers
+              ?.get("x-forwarded-for")
+              ?.split(",")?.[0],
+          });
+        },
+      };
+    },
+  };
+
   const httpServer = http.createServer(app);
   const schema = await buildSchema({
     resolvers: [
@@ -97,6 +112,7 @@ process
       StashViewResolver,
       TftOneClickResolver,
       TftLiveListingsResolver,
+      PoeStackResolver,
     ],
     validate: false,
     container: {
@@ -107,7 +123,7 @@ process
   });
   const server = new ApolloServer<PoeStackContext>({
     schema,
-    plugins: [ApolloServerPluginDrainHttpServer({ httpServer })],
+    plugins: [ApolloServerPluginDrainHttpServer({ httpServer }), myPlugin],
     cache: new InMemoryLRUCache({
       maxSize: Math.pow(2, 20) * 100,
       ttl: 1000 * 10,

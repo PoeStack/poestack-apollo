@@ -1,3 +1,4 @@
+import { Logger } from './../logger';
 import { singleton } from "tsyringe";
 import PoePassiveTree from "./poe-passive-tree";
 
@@ -11,6 +12,6 @@ export class PassiveTreeService {
     this.passiveTree.getResponse();
     this.atlasTree = new PoePassiveTree("data/poe/3.20/atlas_tree.json");
     this.atlasTree.getResponse();
-    console.log("loaded passive trees");
+    Logger.info("loaded passive trees");
   }
 }

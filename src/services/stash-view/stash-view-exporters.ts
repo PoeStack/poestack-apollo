@@ -17,12 +17,13 @@ export class StashViewExporters {
   ): string {
     let output: string[] = [];
 
-    const filteredItems: GqlStashViewItemSummary[] =
-      StashViewUtil.reduceItemStacks(
-        StashViewUtil.searchItems(stashSettings, summary).filter(
-          (e) => !!e.valueChaos
-        )
-      ).sort(
+    const filteredItems: GqlStashViewItemSummary[] = StashViewUtil.searchItems(
+      stashSettings,
+      summary,
+      true
+    )
+      .filter((e) => !!e.valueChaos)
+      .sort(
         (a, b) =>
           StashViewUtil.itemStackTotalValue(stashSettings, b) -
           StashViewUtil.itemStackTotalValue(stashSettings, a)
@@ -32,13 +33,10 @@ export class StashViewExporters {
     }
 
     for (const item of filteredItems) {
-      let line = `${item.quantity}x ${
-        item.itemGroup.displayName
-      } ${StashViewExporters.chaosToDivPlusChaos(
-        stashSettings.chaosToDivRate,
-        StashViewUtil.itemValue(stashSettings, item),
-        false
-      )} / each`;
+      const value = GeneralUtils.roundToFirstNoneZeroN(
+        StashViewUtil.itemValue(stashSettings, item)
+      );
+      let line = `${item.quantity}x ${item.itemGroup.displayName} ${value}c / each`;
 
       if (item.quantity > 1) {
         line += ` (${StashViewExporters.chaosToDivPlusChaos(
@@ -64,11 +62,11 @@ export class StashViewExporters {
     tabs: GqlPoeStashTab[],
     stashSettings: GqlStashViewSettings
   ): string {
-    const mapped: GqlStashViewItemSummary[] = StashViewUtil.reduceItemStacks(
-      StashViewUtil.searchItems(stashSettings, summary).filter(
-        (e) => !!e.valueChaos
-      )
-    );
+    const mapped: GqlStashViewItemSummary[] = StashViewUtil.searchItems(
+      stashSettings,
+      summary,
+      true
+    ).filter((e) => !!e.valueChaos);
     if (mapped.length === 0) {
       throw new Error("No items matched search.");
     }
@@ -168,11 +166,11 @@ export class StashViewExporters {
     tabs: GqlPoeStashTab[],
     stashSettings: GqlStashViewSettings
   ): string {
-    const mapped: GqlStashViewItemSummary[] = StashViewUtil.reduceItemStacks(
-      StashViewUtil.searchItems(stashSettings, summary).filter(
-        (e) => !!e.valueChaos
-      )
-    );
+    const mapped: GqlStashViewItemSummary[] = StashViewUtil.searchItems(
+      stashSettings,
+      summary,
+      true
+    ).filter((e) => !!e.valueChaos);
     if (mapped.length === 0) {
       throw new Error("No items matched search.");
     }
@@ -234,15 +232,17 @@ export class StashViewExporters {
     tabs: GqlPoeStashTab[],
     stashSettings: GqlStashViewSettings
   ): string {
-    const mapped: GqlStashViewItemSummary[] = StashViewUtil.reduceItemStacks(
-      StashViewUtil.searchItems(stashSettings, summary).filter(
-        (e) => !!e.valueChaos
-      )
-    ).sort(
-      (a, b) =>
-        StashViewUtil.itemValue(stashSettings, b) -
-        StashViewUtil.itemValue(stashSettings, a)
-    );
+    const mapped: GqlStashViewItemSummary[] = StashViewUtil.searchItems(
+      stashSettings,
+      summary,
+      true
+    )
+      .filter((e) => !!e.valueChaos)
+      .sort(
+        (a, b) =>
+          StashViewUtil.itemValue(stashSettings, b) -
+          StashViewUtil.itemValue(stashSettings, a)
+      );
     if (mapped.length === 0) {
       throw new Error("No items matched search.");
     }
@@ -276,15 +276,17 @@ export class StashViewExporters {
     tabs: GqlPoeStashTab[],
     stashSettings: GqlStashViewSettings
   ): string {
-    const filteredItems = StashViewUtil.reduceItemStacks(
-      StashViewUtil.searchItems(stashSettings, summary).filter(
-        (e) => !!e.valueChaos
-      )
-    ).sort(
-      (a, b) =>
-        StashViewUtil.itemStackTotalValue(stashSettings, b) -
-        StashViewUtil.itemStackTotalValue(stashSettings, a)
-    );
+    const filteredItems = StashViewUtil.searchItems(
+      stashSettings,
+      summary,
+      true
+    )
+      .filter((e) => !!e.valueChaos)
+      .sort(
+        (a, b) =>
+          StashViewUtil.itemStackTotalValue(stashSettings, b) -
+          StashViewUtil.itemStackTotalValue(stashSettings, a)
+      );
     if (filteredItems.length === 0) {
       throw new Error("No items matched search.");
     }

@@ -9,7 +9,8 @@ export class TftParsers {
     const ign = lines[0]
       .match(/ign: (\S*)/g)?.[0]
       .slice("ign: ".length)
-      .replaceAll("`", "");
+      .replaceAll("`", "")
+      .replaceAll("*", "");
     if (!ign) {
       throw new Error("Missing IGN");
     }
@@ -52,7 +53,7 @@ export class TftParsers {
         divRate * (Number.isNaN(vDiv) ? 0 : vDiv) +
         (Number.isNaN(vChaos) ? 0 : vChaos);
 
-      if (!value) {
+      if (!value || !quantity) {
         continue;
       }
       res.compasses[compass] = {
@@ -108,7 +109,7 @@ export class TftParsers {
     );
 
     const regions = [];
-    ["na", "kr", "sg", "jp", "eu", "ru", "ch"].forEach((e) => {
+    ["na", "kr", "sg", "jp", "eu", "ru", "ch", "br"].forEach((e) => {
       if (lines[1].includes(e)) {
         regions.push(e);
       }

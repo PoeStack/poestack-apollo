@@ -1,11 +1,7 @@
 import { singleton } from "tsyringe";
-import PostgresService from "../mongo/postgres-service";
 import { Logger } from "../logger";
 import {
-  AttachmentBuilder,
   Client,
-  EmbedBuilder,
-  Events,
   GatewayIntentBits,
   GuildMember,
   Message,
@@ -52,7 +48,7 @@ export default class TftDiscordBotService {
     force: boolean = false
   ): Promise<GuildMember | null> {
     try {
-      const guild = await this.client.guilds.fetch(serverId);
+      const guild = await this.client.guilds.fetch("645607528297922560");
       if (!guild) {
         throw new Error(`Failed to fetch guild ${serverId}`);
       }
@@ -61,7 +57,9 @@ export default class TftDiscordBotService {
         force: force,
       });
       return memberUser;
-    } catch (error) {}
+    } catch (error) {
+      Logger.error("error pulling discord membership", error);
+    }
     return null;
   }
 

@@ -79,7 +79,7 @@ export class TwitchService {
 
     const respCode = response.status;
     if (respCode !== 200) {
-      console.log("error pulling twitch last video");
+      Logger.info("error pulling twitch last video");
     }
 
     const body = await response.json();
@@ -106,7 +106,7 @@ export class TwitchService {
 
     const respCode = response.status;
     if (respCode !== 200) {
-      console.log("error pulling twitch view count");
+      Logger.info("error pulling twitch view count");
     }
 
     const body = await response.json();

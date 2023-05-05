@@ -80,7 +80,7 @@ export default class PoeApi {
     const retryAfter = parseInt(response.headers.get("retry-after") ?? "0");
 
     const rules = response.headers.get("x-rate-limit-rules")?.split(",");
-    console.log("exchange rate limit", policy, rules, retryAfter);
+    Logger.info("exchange rate limit", policy, rules, retryAfter);
 
     if (retryAfter) {
       this.exchangeTokenRetryDate = new Date(Date.now() + retryAfter * 1000);
@@ -297,7 +297,7 @@ export default class PoeApi {
     };
 
     const rules = response.headers.get("x-rate-limit-rules")?.split(",");
-    console.log(
+    Logger.info(
       "x-rate-limit",
       rateLimitInfo.policy,
       rules,

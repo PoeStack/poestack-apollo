@@ -1,14 +1,16 @@
+import { Logger } from './../logger';
 import { singleton } from "tsyringe";
 import NodeCache from "node-cache";
 import PostgresService from "../../services/mongo/postgres-service";
 import MathUtils from "../../services/utils/math-utils";
 import { GqlItemGroupListing } from "../../models/basic-models";
 import { LRUCache } from "lru-cache";
+import { GeneralUtils } from "../../utils/general-util";
 
 @singleton()
 export default class ItemGroupLivePricingService {
   private readonly listingsCache = new LRUCache<string, GqlItemGroupListing[]>({
-    maxSize: 100_000 * 7,
+    maxSize: 100_000 * 14,
     sizeCalculation: (value, key) => {
       return (value?.length ?? 0) + 1;
     },
@@ -31,10 +33,10 @@ export default class ItemGroupLivePricingService {
     const cachedListings: GqlItemGroupListing[] =
       this.listingsCache.get(cacheKey);
     if (cachedListings) {
-      console.log("cache hit: " + cacheKey);
+      Logger.debug("cache hit: " + cacheKey);
       return cachedListings;
     }
-    console.log("cache miss: " + cacheKey);
+    Logger.debug("cache miss: " + cacheKey);
 
     const listings: {
       listedAtTimestamp: Date;
@@ -57,7 +59,9 @@ export default class ItemGroupLivePricingService {
       listedValue: Number(e.listedValue),
     }));
 
-    this.listingsCache.set(cacheKey, filteredListings);
+    this.listingsCache.set(cacheKey, filteredListings, {
+      ttl: GeneralUtils.random(1000 * 60 * 15, 1000 * 60 * 25),
+    });
     return filteredListings;
   }
 }

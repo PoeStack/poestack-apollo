@@ -17,6 +17,10 @@ export class TftOneClickResolver {
 
   @Query(() => [GqlOneClickMessageHistory])
   async tftOneClickMessageHistory(@Ctx() ctx: PoeStackContext) {
+    if (!ctx?.userId) {
+      throw new Error("Not authorized.");
+    }
+
     const messages =
       await this.postgresService.prisma.oneClickMessageHistory.findMany({
         where: { userId: ctx.userId },

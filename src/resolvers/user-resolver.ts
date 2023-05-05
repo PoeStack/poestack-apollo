@@ -124,6 +124,13 @@ export class UserResolver {
     const resp = await this.postgresService.prisma.userProfile.findUnique({
       where: { userId: ctx.userId },
     });
+
+    const date = new Date();
+    await this.postgresService.prisma.userProfile.updateMany({
+      where: { userId: ctx.userId },
+      data: { lastConnectedTimestamp: date },
+    });
+
     return resp;
   }
 

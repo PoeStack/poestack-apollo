@@ -61,12 +61,10 @@ export class StashViewUtil {
 
   public static searchItems(
     settings: GqlStashViewSettings,
-    summary: GqlStashViewStashSummary
+    summary: GqlStashViewStashSummary,
+    reduceStack: boolean = false
   ): GqlStashViewItemSummary[] {
     const filters: ((item: GqlStashViewItemSummary) => boolean)[] = [
-      (e) =>
-        !settings.filterCheckedTabs ||
-        settings.checkedTabIds.includes(e.stashId),
       (e) =>
         settings.searchString.trim().length === 0 ||
         e.searchableString.includes(settings.searchString.toLowerCase()),
@@ -101,11 +99,19 @@ export class StashViewUtil {
       },
     ];
 
-    const result = [...summary.items].filter((e) => filters.every((f) => f(e)));
+    const prefilter = [...summary.items].filter(
+      (e) =>
+        !settings.filterCheckedTabs ||
+        settings.checkedTabIds.includes(e.stashId)
+    );
+
+    const result = (
+      reduceStack ? StashViewUtil.reduceItemStacks(prefilter) : prefilter
+    ).filter((e) => filters.every((f) => f(e)));
     return result;
   }
 
-  public static reduceItemStacks(
+  private static reduceItemStacks(
     items: GqlStashViewItemSummary[]
   ): GqlStashViewItemSummary[] {
     const groups: Record<string, GqlStashViewItemSummary> = {};

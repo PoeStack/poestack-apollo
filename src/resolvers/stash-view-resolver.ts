@@ -17,6 +17,7 @@ import PostgresService from "../services/mongo/postgres-service";
 import StashViewService from "../services/stash-view/stash-view-service";
 import _ from "lodash";
 import { GraphQLBoolean } from "graphql";
+import { GraphQLJSON } from "graphql-scalars";
 
 @Resolver()
 @singleton()
@@ -39,8 +40,14 @@ export class StashViewResolver {
     @Arg("input") input: GqlStashViewSnapshotInput,
     @Ctx() ctx: PoeStackContext
   ) {
+    const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
+      {
+        where: { userId: ctx.userId },
+      }
+    );
     const jobId = await this.stashViewService.takeSnapshot(
-      ctx.userId,
+      user.userId,
+      user.opaqueKey,
       input.league,
       input.stashIds
     );
@@ -56,7 +63,7 @@ export class StashViewResolver {
       ctx.userId,
       input
     );
-    return messageBody + '\nusing https://poestack.com/tft/bulk-tool';
+    return messageBody + "\nusing https://poestack.com/tft/bulk-tool";
   }
 
   @Mutation(() => Boolean)
@@ -150,12 +157,17 @@ export class StashViewResolver {
     return true;
   }
 
-  @Query(() => GqlStashViewStashSummary)
+  @Query(() => GraphQLJSON)
   async stashViewStashSummary(
     @Ctx() ctx: PoeStackContext,
     @Arg("search") search: GqlStashViewStashSummarySearch
   ) {
     let userId = ctx.userId;
+
+    if (!search.opaqueKey) {
+      throw new Error("removed.");
+    }
+
     if (search.opaqueKey) {
       const user =
         await this.postgresService.prisma.userProfile.findFirstOrThrow({
@@ -166,8 +178,7 @@ export class StashViewResolver {
 
     const summary = await this.stashViewService.fetchStashViewTabSummary(
       userId,
-      search,
-      false
+      search
     );
     return summary;
   }

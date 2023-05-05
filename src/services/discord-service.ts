@@ -65,6 +65,9 @@ export default class DiscordService {
               Date.now() - 1000 * 60 * 60 * 24
           );
 
+          Logger.info("active users 30 mins", activeUsers30Mins.length);
+          Logger.info("active users total", users.length);
+
           await this.ping(
             `active users - ${activeUsers30Mins.length} : ${activeUsers2Hours.length} : ${activeUsers24Hours.length} : total ${users.length}`
           );
@@ -89,7 +92,7 @@ export default class DiscordService {
   }
 
   public async ping(msg: string) {
-    console.log("Pinging Discord: " + msg);
+    Logger.info("Pinging Discord: " + msg);
     try {
       await fetch(process.env.DISCORD_WEB_HOOK, {
         method: "POST",
