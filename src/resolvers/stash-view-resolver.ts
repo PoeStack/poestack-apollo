@@ -160,22 +160,6 @@ export class StashViewResolver {
     return true;
   }
 
-  @Query(() => GraphQLJSON)
-  async stashViewStashSummary(
-    @Ctx() ctx: PoeStackContext,
-    @Arg("search") search: GqlStashViewStashSummarySearch
-  ) {
-    if (!search.opaqueKey) {
-      throw new Error("removed.");
-    }
-
-    const summary = await this.stashViewService.fetchStashViewTabSummary(
-      search.opaqueKey,
-      search
-    );
-    return summary;
-  }
-
   @Query(() => GqlStashViewStashSummary)
   async stashViewItemSummary(@Ctx() ctx: PoeStackContext) {
     return {};

@@ -1,10 +1,10 @@
 import { singleton } from "tsyringe";
 import PostgresService from "../mongo/postgres-service";
-import MathUtils from "../utils/math-utils";
 import { GqlItemGroupListing } from "../../models/basic-models";
 import { LRUCache } from "lru-cache";
 import { Logger } from "../logger";
 import StopWatch from "../utils/stop-watch";
+import { GeneralUtils } from "../../utils/general-util";
 
 export interface LiveListingSearch {
   itemGroupHashString: string;
@@ -13,6 +13,8 @@ export interface LiveListingSearch {
 
 @singleton()
 export default class LiveListingService {
+  private cacheStats = { hits: 0, misses: 0 };
+
   private readonly listingsCache = new LRUCache<string, GqlItemGroupListing[]>({
     ttl: 1000 * 60 * 15,
 
@@ -30,15 +32,24 @@ export default class LiveListingService {
   public async fetchListings(
     search: LiveListingSearch
   ): Promise<GqlItemGroupListing[]> {
+    if (this.cacheStats.misses + this.cacheStats.hits >= 10000) {
+      Logger.info("live pricing cache", this.cacheStats);
+      this.cacheStats = { hits: 0, misses: 0 };
+    }
+
     const cacheKey = `${search.league}__${search.itemGroupHashString}`;
     const cachedListings = this.listingsCache.get(cacheKey);
     if (cachedListings) {
       Logger.debug("live pricing cache hit", cacheKey);
+      this.cacheStats.hits++;
       return cachedListings;
     }
 
+    this.cacheStats.misses++;
     const liveListings = await this.fetchListingsInternal(search);
-    this.listingsCache.set(cacheKey, liveListings);
+    this.listingsCache.set(cacheKey, liveListings, {
+      ttl: GeneralUtils.random(1000 * 60 * 15, 1000 * 60 * 40),
+    });
     return liveListings;
   }
 
@@ -55,12 +66,9 @@ export default class LiveListingService {
       .$queryRaw`select * from (select max("listedAtTimestamp") as "listedAtTimestamp", avg("listedValue") as "listedValue", sum("quantity") as "quantity" from "PoeLiveListing" psl 
       where "itemGroupHashString" = ${search.itemGroupHashString} and "league" = ${search.league} and "listedAtTimestamp" > now() at time zone 'utc' - INTERVAL '8 hour'
       group by "poeProfileName") x
-      order by x."listedValue" asc`;
+      order by x."listedAtTimestamp" desc`;
 
-    const filteredListings: GqlItemGroupListing[] = MathUtils.filterOutliersBy(
-      listings,
-      (e) => Number(e.listedValue)
-    ).map((e) => ({
+    const mappedListings: GqlItemGroupListing[] = listings.map((e) => ({
       listedAtTimestamp: e.listedAtTimestamp,
       quantity: Number(e.quantity),
       listedValue: Number(e.listedValue),
@@ -70,11 +78,11 @@ export default class LiveListingService {
       league: search.league,
       itemGroupHashString: search.itemGroupHashString,
       listings: listings.length,
-      filteredListings: filteredListings.length,
+      mappedListings: mappedListings.length,
       ms: sw.elapsedMS(),
     });
 
-    return filteredListings;
+    return mappedListings;
   }
 
   public async fetchActiveLiveListingItemGroupsByLeague(): Promise<

@@ -109,7 +109,7 @@ export class TftParsers {
     );
 
     const regions = [];
-    ["na", "kr", "sg", "jp", "eu", "ru", "ch", "br"].forEach((e) => {
+    ["na", "kr", "sg", "jp", "eu", "ru", "ch", "br", 'au', 'nz'].forEach((e) => {
       if (lines[1].includes(e)) {
         regions.push(e);
       }

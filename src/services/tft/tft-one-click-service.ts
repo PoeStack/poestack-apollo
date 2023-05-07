@@ -34,10 +34,10 @@ export default class TftOneClickService {
     return !!user;
   }
 
-  public async createBulkListing2(
+  public async postOneClickMesage(
     targetChannelId: string,
     cooldown: number,
-    bulkListing: TftBulkListing2
+    bulkListing: TftOneClickConfig
   ): Promise<{
     sucess: boolean;
     rateLimitedForSeconds: number;
@@ -83,7 +83,7 @@ export default class TftOneClickService {
     );
     if (!memberUser) {
       throw new Error(
-        `User ${bulkListing.discordUserId} is not a member of the server`
+        `User ${bulkListing.discordUsername} ${bulkListing.discordUserId} is not a member of the server`
       );
     }
 
@@ -91,15 +91,17 @@ export default class TftOneClickService {
       ["Trade Restricted", "Muted"].includes(e.name)
     );
     if (userHasBadRoles) {
-      throw new Error(`User ${bulkListing.discordUserId} is trade restricted`);
+      throw new Error(
+        `User ${bulkListing.discordUsername} ${bulkListing.discordUserId} is trade restricted`
+      );
     }
 
     if (
-      targetChannelId === "874662778592460851" &&
+      ["874662778592460851", "882251982830731315"].includes(targetChannelId) &&
       !memberUser.roles.cache.some((e) => e.id === "848751148478758914")
     ) {
       throw new Error(
-        `User ${bulkListing.discordUserId} must have their poe account linked to TFT to access this channel. Read more (https://discord.com/channels/645607528297922560/665132391983218694/1096931567236022352)`
+        `User ${bulkListing.discordUsername} ${bulkListing.discordUserId} must have their poe account linked to TFT to access this channel. Read more (https://discord.com/channels/645607528297922560/665132391983218694/1096931567236022352)`
       );
     }
 
@@ -128,7 +130,7 @@ export default class TftOneClickService {
       );
       throw error;
     }
-    
+
     if (!bulkListing.test) {
       await this.rateLimitService.updateLimit(
         rateLimitKey,
@@ -145,8 +147,9 @@ export default class TftOneClickService {
   }
 }
 
-export class TftBulkListing2 {
+export class TftOneClickConfig {
   discordUserId: string;
+  discordUsername?: string;
 
   poeAccountProfileName: string;
   poeAccountId: string;

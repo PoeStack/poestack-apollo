@@ -108,6 +108,8 @@ model UserProfile {
   patreonTier               String?
   patreonUpdatedAtTimestamp DateTime?
 
+  roles String[] @default([])
+
   CustomLadderGroup                   CustomLadderGroup[]
   PoeCharacter                        PoeCharacter[]
   PoeStashTab                         PoeStashTab[]

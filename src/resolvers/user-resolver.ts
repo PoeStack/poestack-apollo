@@ -134,19 +134,22 @@ export class UserResolver {
     return resp;
   }
 
-  @Query(() => String)
+  @Mutation(() => String)
   public async loginAs(
     @Ctx() ctx: PoeStackContext,
     @Arg("userId") userId: string
   ) {
-    if (ctx.userId !== "d3d595b6-6982-48f9-9358-048292beb8a7") {
+    const requestingUser =
+      await this.postgresService.prisma.userProfile.findUnique({
+        where: { userId: ctx.userId },
+      });
+    if (!requestingUser.roles.includes("admin")) {
       throw new Error("Admin access required.");
     }
 
     const resp = await this.postgresService.prisma.userProfile.findUnique({
       where: { userId: userId },
     });
-
     const token = jwt.sign(
       {
         userId,
@@ -186,6 +189,7 @@ export class UserResolver {
       patreonUserId: null,
       patreonTier: null,
       patreonUpdatedAtTimestamp: null,
+      roles: [],
     };
 
     await this.postgresService.prisma.userProfile.upsert({

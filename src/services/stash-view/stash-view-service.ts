@@ -1,6 +1,5 @@
 import { STASH_VIEW_TFT_CATEGORIES } from "./stash-view-tft-categories";
 
-import { StashViewExporters } from "./stash-view-exporters";
 import { Logger } from "./../logger";
 import PostgresService from "../mongo/postgres-service";
 import PoeApi from "../poe/poe-api";
@@ -12,8 +11,7 @@ import { OneClickMessageHistory, StashViewItemSummary } from "@prisma/client";
 import ItemGroupingService from "../pricing/item-grouping-service";
 import ItemValueHistoryService from "../pricing/item-value-history-service";
 import {
-  GqlItemGroup,
-  GqlStashViewItemSummary,
+  GqlPoeStashTab,
   GqlStashViewSettings,
   GqlStashViewStashSummary,
   GqlStashViewStashSummarySearch,
@@ -21,6 +19,9 @@ import {
 import { nanoid } from "nanoid";
 import _ from "lodash";
 import TftOneClickService from "../../services/tft/tft-one-click-service";
+import { PoeApiStashTab } from "@gql/resolvers-types";
+import { GeneralUtils } from "../../utils/general-util";
+import LivePricingService from "../../services/live-pricing/live-pricing-service";
 
 @singleton()
 export default class StashViewService {
@@ -31,8 +32,46 @@ export default class StashViewService {
     private readonly s3Service: S3Service,
     private readonly itemGroupingService: ItemGroupingService,
     private readonly itemValueHistoryService: ItemValueHistoryService,
-    private readonly tftOneClickService: TftOneClickService
+    private readonly tftOneClickService: TftOneClickService,
+    private readonly livePricingService: LivePricingService
   ) {}
+
+  public async updateTabs(league: string, userOpaqueKey: string) {
+    const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
+      { where: { opaqueKey: userOpaqueKey } }
+    );
+
+    const { data: rawStashTabs, rateLimitedForMs } =
+      await this.poeApi.fetchStashTabs(user.oAuthToken, league);
+
+    if (rawStashTabs) {
+      const flatStashTabs: PoeApiStashTab[] = rawStashTabs.flatMap(
+        (stashTab) => {
+          const res: PoeApiStashTab[] = stashTab.children
+            ? stashTab.children
+            : [stashTab];
+          delete stashTab.children;
+          return res;
+        }
+      );
+      const mappedTabs: any[] = flatStashTabs.map((tab, i) => ({
+        id: tab.id,
+        parent: tab.parent,
+        color: tab?.metadata?.colour,
+        folder: tab?.metadata?.folder,
+        name: tab.name,
+        type: tab.type,
+        index: tab.index,
+        flatIndex: i,
+      }));
+
+      await this.s3Service.putJson(
+        "poe-stack-stash-view",
+        `stash/${userOpaqueKey}/${league}/tabs.json`,
+        { tabs: mappedTabs, updatedAtTimestamp: new Date() }
+      );
+    }
+  }
 
   public async updateTabsInternal(
     jobId: string,
@@ -44,10 +83,14 @@ export default class StashViewService {
   ) {
     const now = new Date();
 
+    if (GeneralUtils.random(0, 10) === 5) {
+      await this.updateTabs(league, userOpaqueKey);
+    }
+
     const cachedStashSummary =
       (await this.s3Service.getJson(
         "poe-stack-stash-view",
-        `tabs/${userId}/${league}/summary.json`
+        `stash/${userOpaqueKey}/${league}/summary.json`
       )) ?? {};
 
     const stashSummary: {
@@ -169,12 +212,21 @@ export default class StashViewService {
             `Writing tab ${indexProgress}/${tabIds.length}.`
           );
 
+          try {
+            await this.livePricingService.injectPrices(itemSummariesToWrite, {
+              league: league,
+              targetPValuePercent: 10,
+            });
+          } catch (error) {
+            Logger.info("live pricing inject", { error: error});
+          }
+
           await this.itemValueHistoryService.injectItemPValue(
             itemSummariesToWrite,
             {
               league: league,
               valuationTargetPValue: "p10",
-              valuationStockInfluence: "smart-influence",
+              valuationStockInfluence: "none",
             }
           );
 
@@ -184,11 +236,6 @@ export default class StashViewService {
           );
 
           tab["totalValueChaos"] = stashTotalValue;
-          await this.s3Service.putJson(
-            "poe-stack-stash-view",
-            `tabs/${userId}/${league}/${tab.id}.json`,
-            tab
-          );
           await this.s3Service.putJson(
             "poe-stack-stash-view",
             `stash/${userOpaqueKey}/${league}/tabs/${tab.id}.json`,
@@ -212,11 +259,6 @@ export default class StashViewService {
             },
           });
 
-          await this.s3Service.putJson(
-            "poe-stack-stash-view",
-            `tabs/${userId}/${league}/${tab.id}_summary.json`,
-            { itemSummaries: itemSummariesToWrite }
-          );
           await this.postgresService.prisma.stashViewTabSnapshotRecord.upsert({
             where: {
               userId_league_stashId: {
@@ -247,11 +289,6 @@ export default class StashViewService {
 
     await this.s3Service.putJson(
       "poe-stack-stash-view",
-      `tabs/${userId}/${league}/summary.json`,
-      stashSummary
-    );
-    await this.s3Service.putJson(
-      "poe-stack-stash-view",
       `stash/${userOpaqueKey}/${league}/summary.json`,
       stashSummary
     );
@@ -266,11 +303,6 @@ export default class StashViewService {
     );
     const itemGroupMap = {};
     itemGroups.forEach((e) => (itemGroupMap[e.hashString] = e));
-    await this.s3Service.putJson(
-      "poe-stack-stash-view",
-      `tabs/${userId}/${league}/summary_item_groups.json`,
-      { itemGroups: itemGroupMap, updatedAtTimestamp: now }
-    );
     await this.s3Service.putJson(
       "poe-stack-stash-view",
       `stash/${userOpaqueKey}/${league}/summary_item_groups.json`,
@@ -303,9 +335,10 @@ export default class StashViewService {
         status: "starting",
       },
     });
-    this.updateTabsInternal(jobId, userId, userOpaqueKey, league, tabIds, 50);
+    this.updateTabsInternal(jobId, userId, userOpaqueKey, league, tabIds, 300);
     return jobId;
   }
+  "874662778592460851";
 
   public async oneClickPostMessage(
     opaqueKey: string,
@@ -341,11 +374,12 @@ export default class StashViewService {
 
     const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
     const targetChannel = tftCategory.channels[input.league];
-    const resp = await this.tftOneClickService.createBulkListing2(
+    const resp = await this.tftOneClickService.postOneClickMesage(
       targetChannel.channelId,
       targetChannel.timeout,
       {
         discordUserId: user.discordUserId,
+        discordUsername: user.discordUsername,
         poeAccountProfileName: user.poeProfileName,
         poeAccountId: user.userId,
         league: input.league,

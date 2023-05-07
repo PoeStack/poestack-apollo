@@ -149,6 +149,24 @@ export class GqlItemGroup {
   createdAtTimestamp: Date;
 }
 
+@ObjectType("SearchableItemGroupSummary")
+export class GqlSearchableItemGroupSummary {
+  @Field()
+  key: string;
+
+  @Field()
+  tag: string;
+
+  @Field({ nullable: true })
+  icon: string;
+
+  @Field({ nullable: true })
+  displayName?: string;
+
+  @Field()
+  value: number;
+}
+
 @ObjectType("ItemGroupHashProperty")
 export class GqlItemGroupHashProperty {
   @Field()
@@ -231,6 +249,9 @@ export class GqlUserProfile {
 
   @Field({ nullable: true })
   opaqueKey: string;
+
+  @Field(() => [String])
+  roles: string;
 
   oAuthToken: string;
 }
@@ -1326,7 +1347,6 @@ export class GqlTftLiveListingSearchPropertyGroup {
   filters: GqlTftLiveListingSearchProperty[];
 }
 
-
 @InputType("TftLiveListingSearch")
 export class GqlTftLiveListingSearch {
   @Field()
@@ -1334,4 +1354,45 @@ export class GqlTftLiveListingSearch {
 
   @Field(() => [GqlTftLiveListingSearchPropertyGroup])
   propertyFilterGroups: GqlTftLiveListingSearchPropertyGroup[];
+}
+
+@ObjectType("LivePricingValuation")
+export class GqlLivePricingValuation {
+  @Field()
+  targetValue: number;
+  @Field()
+  targetValueIndex: number;
+
+  @Field()
+  baseValue: number;
+  @Field()
+  baseValueIndex: number;
+
+  @Field(() => [GqlItemGroupListing])
+  validListings: GqlItemGroupListing[];
+  @Field()
+  validListingsLength: number;
+}
+
+@ObjectType("LivePricingResult")
+export class GqlLivePricingResult {
+  @Field()
+  genericValuation: GqlLivePricingValuation;
+  @Field()
+  stockBasedValuation: GqlLivePricingValuation;
+
+  @Field()
+  allListingsLength: number;
+}
+
+@InputType("LivePricingConfig")
+export class GqlLivePricingConfig {
+  @Field()
+  league: string;
+  @Field()
+  itemGroupHashString: string;
+  @Field()
+  quantity: number;
+  @Field()
+  targetPValuePercent: number;
 }
