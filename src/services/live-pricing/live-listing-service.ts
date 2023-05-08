@@ -50,6 +50,7 @@ export default class LiveListingService {
     this.listingsCache.set(cacheKey, liveListings, {
       ttl: GeneralUtils.random(1000 * 60 * 15, 1000 * 60 * 40),
     });
+    
     return liveListings;
   }
 

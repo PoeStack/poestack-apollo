@@ -2,8 +2,9 @@ import { Arg, Ctx, Query, Resolver } from "type-graphql";
 import LivePricingService from "../services/live-pricing/live-pricing-service";
 import { singleton } from "tsyringe";
 import {
-  GqlLivePricingConfig,
+  GqlLivePricingSimpleConfig,
   GqlLivePricingResult,
+  GqlLivePricingSimpleResult,
 } from "../models/basic-models";
 import { PoeStackContext } from "../index";
 
@@ -12,14 +13,30 @@ import { PoeStackContext } from "../index";
 export class LivePricingResolver {
   constructor(private readonly livePricingService: LivePricingService) {}
 
-  @Query(() => GqlLivePricingResult)
-  public async livePriceItemGroups(
+  @Query(() => GqlLivePricingSimpleResult)
+  public async livePriceSimple(
     @Ctx() ctx: PoeStackContext,
-    @Arg("config") config: GqlLivePricingConfig
-  ): Promise<GqlLivePricingResult> {
-    const result: GqlLivePricingResult =
-      await this.livePricingService.livePrice(config, config)!;
+    @Arg("config") config: GqlLivePricingSimpleConfig
+  ): Promise<GqlLivePricingSimpleResult> {
+    const result = await this.livePricingService.livePrice(config, {
+      league: config.league,
+      valuationConfigs: [
+        { listingPercent: config.listingPercent ?? 10, quantity: 1 },
+        {
+          listingPercent: config.listingPercent ?? 10,
+          quantity: config.quantity,
+        },
+      ],
+    })!;
 
-    return result;
+    const simpleResult: GqlLivePricingSimpleResult = {
+      allListingsLength: result.allListingsLength,
+      valuation: result.valuations.find((e) => e.quantity === 1),
+      stockValuation: result.valuations.find(
+        (e) => e.quantity === config.quantity
+      ),
+    };
+
+    return simpleResult;
   }
 }

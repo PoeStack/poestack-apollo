@@ -1130,9 +1130,9 @@ export class GqlStashViewJob {
   @Field()
   status: string;
   @Field()
-  totalStahes: number;
-  @Field()
   timestamp: Date;
+  @Field({ nullable: true })
+  rateLimitEndTimestamp?: Date;
 }
 
 @InputType("StashViewStashSummarySearch")
@@ -1359,14 +1359,14 @@ export class GqlTftLiveListingSearch {
 @ObjectType("LivePricingValuation")
 export class GqlLivePricingValuation {
   @Field()
-  targetValue: number;
+  listingPercent: number;
   @Field()
-  targetValueIndex: number;
+  quantity: number;
 
   @Field()
-  baseValue: number;
+  value: number;
   @Field()
-  baseValueIndex: number;
+  valueIndex: number;
 
   @Field(() => [GqlItemGroupListing])
   validListings: GqlItemGroupListing[];
@@ -1377,22 +1377,30 @@ export class GqlLivePricingValuation {
 @ObjectType("LivePricingResult")
 export class GqlLivePricingResult {
   @Field()
-  genericValuation: GqlLivePricingValuation;
-  @Field()
-  stockBasedValuation: GqlLivePricingValuation;
-
-  @Field()
   allListingsLength: number;
+  @Field(() => [GqlLivePricingValuation])
+  valuations: GqlLivePricingValuation[];
 }
 
-@InputType("LivePricingConfig")
-export class GqlLivePricingConfig {
+@ObjectType("LivePricingSimpleResult")
+export class GqlLivePricingSimpleResult {
+  @Field()
+  allListingsLength: number;
+
+  @Field(() => GqlLivePricingValuation)
+  valuation: GqlLivePricingValuation;
+  @Field(() => GqlLivePricingValuation)
+  stockValuation: GqlLivePricingValuation;
+}
+
+@InputType("LivePricingSimpleConfig")
+export class GqlLivePricingSimpleConfig {
   @Field()
   league: string;
   @Field()
   itemGroupHashString: string;
   @Field()
   quantity: number;
-  @Field()
-  targetPValuePercent: number;
+  @Field({ nullable: true })
+  listingPercent?: number;
 }

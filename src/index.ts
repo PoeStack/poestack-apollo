@@ -41,6 +41,7 @@ import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
 import { PoeStackResolver } from "./resolvers/poestack-resolver";
 import { LivePricingResolver } from "./resolvers/live-pricing-resolver";
+import LivePricingHistoryService from "./services/live-pricing/live-pricing-history-service";
 
 dotenv.config({ path: ".env.local" });
 
@@ -179,6 +180,10 @@ process
 
   if (process.env.START_POB === "true") {
     container.resolve(PobService).startPobStream();
+  }
+
+  if (process.env.START_LIVE_PRICING_HISTORY_JOB === "true") {
+    container.resolve(LivePricingHistoryService).startBackgroundJob();
   }
 
   if (process.env.START_POB_BACKGROUND_JOB === "true") {

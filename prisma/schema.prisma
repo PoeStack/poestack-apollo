@@ -269,7 +269,7 @@ model StashViewSnapshotJob {
   userId    String
   status    String
 
-  totalStahes Int
+  rateLimitEndTimestamp DateTime?
 
   @@index([userId])
 }
@@ -359,4 +359,17 @@ model TftLiveListing {
   delistedAtTimestamp DateTime?
 
   @@id([userDiscordId, channelId])
+}
+
+model LivePricingHistoryHourEntry {
+  itemGroupHashString  String
+  league               String
+  type                 String
+  value                Float
+  minQuantityInclusive Int
+  timestamp            DateTime
+
+  @@id([itemGroupHashString, league, type, minQuantityInclusive, timestamp])
+  @@index([itemGroupHashString])
+  @@index([timestamp])
 }

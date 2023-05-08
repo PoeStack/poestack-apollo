@@ -8,6 +8,7 @@ import LiveListingService from "./live-listing-service";
 import MathUtils from "../../services/utils/math-utils";
 import StopWatch from "../../services/utils/stop-watch";
 import { Logger } from "../../services/logger";
+import _ from "lodash";
 
 export class LivePricingInput {
   itemGroupHashString?: string | null | undefined;
@@ -16,7 +17,28 @@ export class LivePricingInput {
 
 export class LivePricingConfig {
   league: string;
-  targetPValuePercent: number;
+  valuationConfigs: LivePricingValuationConfig[];
+}
+
+export class LivePricingValuationConfig {
+  listingPercent: number;
+  quantity: number;
+}
+
+export class LivePricingValuation {
+  listingPercent: number;
+  quantity: number;
+
+  value: number;
+  valueIndex: number;
+
+  validListings: GqlItemGroupListing[];
+  validListingsLength: number;
+}
+
+export class LivePricingResult {
+  allListingsLength: number;
+  valuations: LivePricingValuation[];
 }
 
 @singleton()
@@ -25,14 +47,37 @@ export default class LivePricingService {
 
   public async injectPrices(
     inputs: LivePricingInput[],
-    config: LivePricingConfig
+    config: { league: string; listingPercent: number }
   ) {
     const sw = new StopWatch(true);
     for (const input of inputs) {
-      const valuation = await this.livePrice(input, config);
-      inputs["targetValue"] = valuation?.genericValuation?.targetValue;
-      inputs["baseValue"] = valuation?.genericValuation?.baseValue;
-      inputs["stockValue"] = valuation?.stockBasedValuation?.targetValue;
+      const result = await this.livePrice(input, {
+        league: config.league,
+        valuationConfigs: [
+          { listingPercent: 10, quantity: 1 },
+          { listingPercent: config.listingPercent, quantity: 1 },
+          {
+            listingPercent: config.listingPercent,
+            quantity: input.quantity,
+          },
+        ],
+      });
+
+      if (!result) {
+        continue;
+      }
+
+      input["fixedValue"] = result.valuations.find(
+        (e) => e.listingPercent === 10 && e.quantity === 1
+      )?.value;
+      input["targetValue"] = result.valuations.find(
+        (e) => e.listingPercent === config.listingPercent && e.quantity === 1
+      )?.value;
+      input["stockValue"] = result.valuations.find(
+        (e) =>
+          e.listingPercent === config.listingPercent &&
+          e.quantity === input.quantity
+      )?.value;
     }
     sw.stop();
     Logger.info("live pricing inject", {
@@ -41,16 +86,36 @@ export default class LivePricingService {
     });
   }
 
+  public async livePriceSimple(
+    input: { itemGroupHashString?: string | null | undefined },
+    config: { league: string; listingPercent?: number; quantity?: number }
+  ): Promise<LivePricingValuation> {
+    const valuations = await this.livePrice(
+      {
+        itemGroupHashString: input.itemGroupHashString,
+      },
+      {
+        league: config.league,
+        valuationConfigs: [
+          {
+            quantity: config.quantity,
+            listingPercent: config.listingPercent ?? 10,
+          },
+        ],
+      }
+    );
+
+    const valuation = valuations.valuations[0];
+    return valuation;
+  }
+
   public async livePrice(
-    item: LivePricingInput,
+    item: { itemGroupHashString?: string | null | undefined },
     config: LivePricingConfig
-  ): Promise<GqlLivePricingResult | null> {
-    if (item.quantity === undefined || item.quantity === null) {
-      return null;
-    }
+  ): Promise<LivePricingResult | null> {
     if (
-      item.itemGroupHashString === undefined ||
-      item.itemGroupHashString === null
+      item?.itemGroupHashString === undefined ||
+      item?.itemGroupHashString === null
     ) {
       return null;
     }
@@ -61,28 +126,38 @@ export default class LivePricingService {
       league: config.league,
     });
 
-    const genericValuation = this.extractValuation(config, allListings, null);
-
-    //config.quantity is the stock items that the person making the price request owns.
-    const minQuantity = Math.ceil(item.quantity * 0.9);
-    const stockBasedValuation = this.extractValuation(
-      config,
-      allListings,
-      (e: GqlItemGroupListing) => e.quantity >= minQuantity
+    const valuationConfigsByQuantity = _.groupBy(
+      config.valuationConfigs,
+      (e) => e.quantity
     );
+    const allValuations = [];
+    for (const valuationConfigQuantityGroup of Object.values(
+      valuationConfigsByQuantity
+    )) {
+      const quantity = valuationConfigQuantityGroup[0].quantity;
+      const listingPercents = _.uniq(
+        valuationConfigQuantityGroup.map((e) => e.listingPercent)
+      );
+
+      const valuations = this.extractValuations(
+        allListings,
+        quantity,
+        listingPercents
+      );
+      allValuations.push(...valuations);
+    }
 
     return {
-      genericValuation: genericValuation,
-      stockBasedValuation: stockBasedValuation,
       allListingsLength: allListings.length,
+      valuations: allValuations,
     };
   }
 
-  private extractValuation(
-    config: LivePricingConfig,
+  private extractValuations(
     allListings: GqlItemGroupListing[],
-    filter: ((GqlItemGroupListing) => boolean) | null
-  ): GqlLivePricingValuation {
+    minQuantity: number,
+    listingPercents: number[]
+  ): LivePricingValuation[] {
     //Target all listings within the last hour
     const minDate = Date.now() - 1000 * 60 * 60 * 2;
 
@@ -96,7 +171,7 @@ export default class LivePricingService {
         break;
       }
 
-      if (!filter || filter(listing)) {
+      if (minQuantity <= listing.quantity) {
         validListings.push(listing);
       }
     }
@@ -111,29 +186,33 @@ export default class LivePricingService {
       (a, b) => a.listedValue - b.listedValue
     );
 
-    //Find the index that falls on the p value line.
-    const targetValueIndex = Math.round(
-      sortedListings.length * (config.targetPValuePercent / 100)
-    );
-    const targetValueListing = sortedListings[targetValueIndex]?.listedValue;
-    const targetValueListingPlusOne =
-      sortedListings[targetValueIndex + 1]?.listedValue ?? targetValueListing;
+    const results: LivePricingValuation[] = [];
+    for (const listingPercent of listingPercents) {
+      //Find the index that falls on the p value line.
+      const valueLowIndex = Math.floor(
+        sortedListings.length * (listingPercent / 100)
+      );
+      const valueHighIndex = Math.ceil(
+        sortedListings.length * (listingPercent / 100)
+      );
+      const valueLow = sortedListings[valueLowIndex]?.listedValue;
+      const valueHigh = sortedListings[valueHighIndex]?.listedValue ?? valueLow;
+      const valueAvg = (valueLow + valueHigh) / 2;
 
-    const baseValueIndex = Math.round(sortedListings.length * 0.1);
-    const baseValueListing = sortedListings[baseValueIndex]?.listedValue;
-    const baseValueListingPlusOne =
-      sortedListings[baseValueIndex + 1]?.listedValue ?? baseValueListing;
-
-    return {
-      targetValue: (targetValueListing + targetValueListingPlusOne) / 2,
-      targetValueIndex: targetValueIndex,
-      baseValue: (baseValueListing + baseValueListingPlusOne) / 2,
-      baseValueIndex: baseValueIndex,
-      validListingsLength: validListings.length,
-      validListings: sortedListings.slice(
-        Math.max(targetValueIndex - 20, 0),
-        Math.min(sortedListings.length - 1, targetValueIndex + 20)
-      ),
-    };
+      if (valueLow) {
+        results.push({
+          listingPercent: listingPercent,
+          quantity: minQuantity,
+          validListings: sortedListings.slice(
+            Math.max(valueLowIndex - 20, 0),
+            Math.min(sortedListings.length - 1, valueLowIndex + 20)
+          ),
+          validListingsLength: sortedListings.length,
+          value: valueAvg,
+          valueIndex: valueLowIndex,
+        });
+      }
+    }
+    return results;
   }
 }

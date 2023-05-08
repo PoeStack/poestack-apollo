@@ -29,17 +29,17 @@ export class ItemGroupResolver {
         continue;
       }
 
-      const valuation = await this.livePricing.livePrice(
-        { itemGroupHashString: itemGroup.hashString, quantity: 1 },
-        { league: "Crucible", targetPValuePercent: 10 }
+      const valuation = await this.livePricing.livePriceSimple(
+        { itemGroupHashString: itemGroup.hashString },
+        { league: "Crucible" }
       );
 
-      if (valuation?.genericValuation?.targetValue) {
+      if (valuation?.value) {
         const summary: GqlSearchableItemGroupSummary = {
           key: itemGroup.key,
           icon: itemGroup.icon,
           tag: itemGroup.tag,
-          value: valuation.genericValuation.targetValue,
+          value: valuation.value,
         };
         if (itemGroup.displayName) {
           summary.displayName = itemGroup.displayName;

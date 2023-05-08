@@ -31,7 +31,7 @@ export default class MathUtils {
 
     minValue = Math.max(
       minValue,
-      values[Math.floor(values.length * 0.1)] * 0.5
+      values[Math.floor(values.length * 0.1)] * 0.2
     );
 
     // Then filter anything beyond or beneath these values.

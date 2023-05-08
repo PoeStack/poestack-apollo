@@ -143,12 +143,8 @@ export default class StashViewService {
           Logger.info("stash fetch retry delaying " + rateLimitedForMs);
           await this.updateJob(
             jobId,
-
-            `Tab ${indexProgress}/${
-              tabIds.length
-            } waiting for GGG rate limit ${Math.round(
-              rateLimitedForMs / 1000
-            )} seconds.`
+            `Tab ${indexProgress}/${tabIds.length} waiting for GGG rate.`,
+            new Date(Date.now() + rateLimitedForMs)
           );
           await new Promise((res) => setTimeout(res, rateLimitedForMs));
         } else {
@@ -215,10 +211,10 @@ export default class StashViewService {
           try {
             await this.livePricingService.injectPrices(itemSummariesToWrite, {
               league: league,
-              targetPValuePercent: 10,
+              listingPercent: 10,
             });
           } catch (error) {
-            Logger.info("live pricing inject", { error: error});
+            Logger.info("live pricing inject error", { error: error });
           }
 
           await this.itemValueHistoryService.injectItemPValue(
@@ -312,10 +308,14 @@ export default class StashViewService {
     await this.updateJob(jobId, `Complete.`);
   }
 
-  private async updateJob(jobId: string, status: string) {
+  private async updateJob(
+    jobId: string,
+    status: string,
+    rateLimitEndTimestamp: Date | null = null
+  ) {
     await this.postgresService.prisma.stashViewSnapshotJob.update({
       where: { id: jobId },
-      data: { status: status },
+      data: { status: status, rateLimitEndTimestamp: rateLimitEndTimestamp },
     });
   }
 
@@ -331,14 +331,12 @@ export default class StashViewService {
         id: jobId,
         userId: userId,
         timestamp: new Date(),
-        totalStahes: tabIds.length,
         status: "starting",
       },
     });
     this.updateTabsInternal(jobId, userId, userOpaqueKey, league, tabIds, 300);
     return jobId;
   }
-  "874662778592460851";
 
   public async oneClickPostMessage(
     opaqueKey: string,
@@ -440,7 +438,6 @@ export default class StashViewService {
                 id: jobId,
                 userId: job.userId,
                 timestamp: new Date(),
-                totalStahes: job.stashIds.length,
                 status: "starting",
               },
             });
