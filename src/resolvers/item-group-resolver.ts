@@ -3,8 +3,15 @@ import { Arg, Float, Query, Resolver } from "type-graphql";
 import PostgresService from "../services/mongo/postgres-service";
 import { singleton } from "tsyringe";
 import ItemValueHistoryService from "../services/pricing/item-value-history-service";
-import { GqlSearchableItemGroupSummary } from "../models/basic-models";
 import LivePricingService from "../services/live-pricing/live-pricing-service";
+import _ from "lodash";
+
+export class ItemGroupSummary {
+  hash: string;
+  value: number;
+  properties: any;
+  searchableString: string;
+}
 
 @Resolver()
 @singleton()
@@ -16,54 +23,44 @@ export class ItemGroupResolver {
     private readonly s3Service: S3Service
   ) {}
 
-  @Query(() => [GqlSearchableItemGroupSummary])
+  @Query(() => Boolean)
   async itemGroupInfo() {
     const itemGroups = await this.postgresService.prisma.itemGroupInfo.findMany(
       {}
     );
 
-    const searchableSummaries: Record<string, GqlSearchableItemGroupSummary> =
-      {};
-    for (const itemGroup of itemGroups) {
-      if (searchableSummaries[itemGroup.key]) {
-        continue;
-      }
-
-      const valuation = await this.livePricing.livePriceSimple(
-        { itemGroupHashString: itemGroup.hashString },
-        { league: "Crucible" }
-      );
-
-      if (valuation?.value) {
-        const summary: GqlSearchableItemGroupSummary = {
-          key: itemGroup.key,
-          icon: itemGroup.icon,
-          tag: itemGroup.tag,
-          value: valuation.value,
+    const tags = _.uniq(itemGroups.map((e) => e.tag));
+    for (const tag of tags) {
+      const summaries: ItemGroupSummary[] = [];
+      for (const itemGroup of itemGroups.filter((e) => e.tag === tag)) {
+        const valuation = await this.livePricing.livePriceSimple(
+          { itemGroupHashString: itemGroup.hashString },
+          { league: "Crucible" }
+        );
+        const summary: ItemGroupSummary = {
+          hash: itemGroup.hashString,
+          searchableString: itemGroup.displayName ?? itemGroup.key,
+          value: valuation?.value ?? 0,
+          properties: itemGroup.properties,
         };
-        if (itemGroup.displayName) {
-          summary.displayName = itemGroup.displayName;
-        }
-        searchableSummaries[itemGroup.key] = summary;
+        summaries.push(summary);
       }
+
+      const sortedSummaries = summaries.sort((a, b) => b.value - a.value);
+      await this.s3Service.putJson(
+        "poe-stack-public",
+        `item-groups/tag_${tag}.json`,
+        {
+          entries: sortedSummaries.map((e) => [
+            e.hash,
+            e.searchableString,
+            e.properties,
+          ]),
+        }
+      );
     }
 
-    const summaries = [...Object.values(searchableSummaries)].sort(
-      (a, b) => b.value - a.value
-    );
-    summaries.forEach((e) => {
-      delete e.value;
-    });
-
-    await this.s3Service.putJson(
-      "poe-stack-public",
-      "item-groups/all-summaries.json",
-      {
-        summaries: summaries,
-      }
-    );
-
-    return null;
+    return true;
   }
 
   @Query(() => [String])

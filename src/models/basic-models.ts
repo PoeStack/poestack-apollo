@@ -149,24 +149,6 @@ export class GqlItemGroup {
   createdAtTimestamp: Date;
 }
 
-@ObjectType("SearchableItemGroupSummary")
-export class GqlSearchableItemGroupSummary {
-  @Field()
-  key: string;
-
-  @Field()
-  tag: string;
-
-  @Field({ nullable: true })
-  icon: string;
-
-  @Field({ nullable: true })
-  displayName?: string;
-
-  @Field()
-  value: number;
-}
-
 @ObjectType("ItemGroupHashProperty")
 export class GqlItemGroupHashProperty {
   @Field()
@@ -1403,4 +1385,34 @@ export class GqlLivePricingSimpleConfig {
   quantity: number;
   @Field({ nullable: true })
   listingPercent?: number;
+}
+
+@ObjectType("LivePricingSummaryEntry")
+export class GqlLivePricingSummaryEntry {
+  @Field()
+  itemGroupKey: string;
+  @Field()
+  itemGroupHashString: string;
+
+  @Field()
+  icon: string;
+
+  @Field(() => GqlLivePricingValuation, { nullable: true })
+  valuation?: GqlLivePricingValuation;
+  @Field(() => GqlLivePricingValuation, { nullable: true })
+  stockValuation?: GqlLivePricingValuation;
+}
+
+@ObjectType("LivePricingSummary")
+export class GqlLivePricingSummary {
+  @Field(() => [GqlLivePricingSummaryEntry])
+  entries: GqlLivePricingSummaryEntry[];
+}
+
+@InputType("LivePricingKeySummaryConfig")
+export class GqlLivePricingSummaryConfig {
+  @Field()
+  league: string;
+  @Field(() => [String])
+  itemGroupHashStrings: string[];
 }

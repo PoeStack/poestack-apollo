@@ -30,8 +30,8 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
       },
     },
     filter: (item) =>
-      [4, 16].includes(
-        item.itemGroup?.properties?.find((e) => e["key"] === "uses")?.value
+      ["4", "16"].includes(
+        `${item.itemGroup?.properties?.find((e) => e["key"] === "uses")?.value}`
       ),
   },
   "essence high": {

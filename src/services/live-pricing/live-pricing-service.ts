@@ -1,11 +1,6 @@
-import {
-  GqlItemGroupListing,
-  GqlLivePricingResult,
-  GqlLivePricingValuation,
-} from "../../models/basic-models";
+import { GqlItemGroupListing } from "../../models/basic-models";
 import { singleton } from "tsyringe";
 import LiveListingService from "./live-listing-service";
-import MathUtils from "../../services/utils/math-utils";
 import StopWatch from "../../services/utils/stop-watch";
 import { Logger } from "../../services/logger";
 import _ from "lodash";
@@ -98,7 +93,7 @@ export default class LivePricingService {
         league: config.league,
         valuationConfigs: [
           {
-            quantity: config.quantity,
+            quantity: config.quantity ?? 1,
             listingPercent: config.listingPercent ?? 10,
           },
         ],
@@ -158,56 +153,63 @@ export default class LivePricingService {
     minQuantity: number,
     listingPercents: number[]
   ): LivePricingValuation[] {
+    const effectiveMinQuantity = Math.max(
+      1,
+      Math.round(minQuantity - Math.max(3, minQuantity * 0.17))
+    );
+
     //Target all listings within the last hour
-    const minDate = Date.now() - 1000 * 60 * 60 * 2;
+    const minDate = Date.now() - 1000 * 60 * 60 * 3;
 
     //Attempting to find all listings within our quantity bracket within the last hour, but exceed the last hour if we found less than 30 listings
     let validListings = [];
     for (const listing of allListings) {
       if (
-        validListings.length >= 200 &&
+        validListings.length >= 450 &&
         listing.listedAtTimestamp.getTime() < minDate
       ) {
         break;
       }
 
-      if (minQuantity <= listing.quantity) {
+      if (effectiveMinQuantity <= listing.quantity) {
         validListings.push(listing);
       }
     }
 
-    const filteredListings = MathUtils.filterOutliersBy(
-      validListings,
-      (e) => e.listedValue
+    //Sort by the value to make the target p value easy.
+    const sortedListings: GqlItemGroupListing[] = validListings.sort(
+      (a, b) => a.listedValue - b.listedValue
     );
 
-    //Sort by the value to make the target p value easy.
-    const sortedListings: GqlItemGroupListing[] = filteredListings.sort(
-      (a, b) => a.listedValue - b.listedValue
+    //Filter outlieres
+    const low =
+      sortedListings[Math.floor(sortedListings.length * 0.03)]?.listedValue;
+    const high =
+      sortedListings[Math.floor(sortedListings.length * 0.95)]?.listedValue;
+    const filteredListings = sortedListings.filter(
+      (e) => e.listedValue >= low && e.listedValue <= high
     );
 
     const results: LivePricingValuation[] = [];
     for (const listingPercent of listingPercents) {
       //Find the index that falls on the p value line.
       const valueLowIndex = Math.floor(
-        sortedListings.length * (listingPercent / 100)
+        filteredListings.length * (listingPercent / 100)
       );
       const valueHighIndex = Math.ceil(
-        sortedListings.length * (listingPercent / 100)
+        filteredListings.length * (listingPercent / 100)
       );
-      const valueLow = sortedListings[valueLowIndex]?.listedValue;
-      const valueHigh = sortedListings[valueHighIndex]?.listedValue ?? valueLow;
+      const valueLow = filteredListings[valueLowIndex]?.listedValue;
+      const valueHigh =
+        filteredListings[valueHighIndex]?.listedValue ?? valueLow;
       const valueAvg = (valueLow + valueHigh) / 2;
 
       if (valueLow) {
         results.push({
           listingPercent: listingPercent,
           quantity: minQuantity,
-          validListings: sortedListings.slice(
-            Math.max(valueLowIndex - 20, 0),
-            Math.min(sortedListings.length - 1, valueLowIndex + 20)
-          ),
-          validListingsLength: sortedListings.length,
+          validListings: filteredListings,
+          validListingsLength: filteredListings.length,
           value: valueAvg,
           valueIndex: valueLowIndex,
         });

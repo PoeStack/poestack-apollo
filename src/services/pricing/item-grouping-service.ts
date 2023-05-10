@@ -178,7 +178,7 @@ export class UnqiueGearGroupIdentifier implements ItemGroupIdentifier {
         hashProperties: {
           sixLink: item.sockets?.filter((s) => s.group === 0).length === 6,
           corrupted: !!item.corrupted,
-          foilVariation: item.foilVariation ?? 0,
+          foilVariation: item.foilVariation ?? null,
         },
       };
 
@@ -237,26 +237,33 @@ export class GemGroupIdentifier implements ItemGroupIdentifier {
   ];
 
   private convertLvlToRange(typeLine: string, lvl: number): string {
-    if (this.exceptionalGems.includes(typeLine)) {
+    if (
+      this.exceptionalGems.includes(typeLine) ||
+      this.exceptionalGems.includes(typeLine.replaceAll("awakened ", ""))
+    ) {
       return lvl.toString();
     }
-    if (typeLine.includes("awakened")) {
+    if (lvl >= 20) {
       return lvl.toString();
     }
-    if (lvl >= 19) {
-      return lvl.toString();
-    }
-    return "1-18";
+    return "1-19";
   }
 
-  private convertQToRange(quality: number): string {
+  private convertQToRange(typeLine: string, quality: number): string {
+    if (
+      this.exceptionalGems.includes(typeLine) ||
+      this.exceptionalGems.includes(typeLine.replaceAll("awakened ", ""))
+    ) {
+      return "any";
+    }
+
     if (quality === 0) {
       return quality.toString();
     }
-    if (quality >= 19) {
+    if (quality >= 20) {
       return quality.toString();
     }
-    return "1-18";
+    return "1-19";
   }
 
   group(item: PoeApiItem): InternalGroup {
@@ -268,6 +275,7 @@ export class GemGroupIdentifier implements ItemGroupIdentifier {
         "This is a Support Gem. It does not grant a bonus to your character, but to skills in sockets connected to it. Place into an item socket connected to a socket containing the Active Skill Gem you wish to augment. Right click to remove from a socket."
     ) {
       const quality = this.convertQToRange(
+        typeLine,
         parseInt(
           item.properties
             .filter((p) => p.name === "Quality")?.[0]
@@ -348,7 +356,7 @@ export class HeistContractsGroupIdentifier implements ItemGroupIdentifier {
           key: type + " contract",
           tag: "contract",
           hashProperties: {
-            ilvl: ilvl >= 83 ? "83+" : "<83",
+            ilvl: ilvl >= 81 ? "83+" : "<83",
           },
         };
         return group;
@@ -411,6 +419,22 @@ export class CompassGroupIdentifier implements ItemGroupIdentifier {
     });
   }
 
+  private usesToString(uses: number): string {
+    if (uses === 4 || uses === 16) {
+      return `${uses}`;
+    }
+
+    if (uses < 4) {
+      return "<4";
+    }
+
+    if (uses > 4 && uses < 16) {
+      return "5-15";
+    }
+
+    return `${uses}`;
+  }
+
   group(item: PoeApiItem): InternalGroup {
     const baseType = item.baseType?.toLowerCase();
 
@@ -434,7 +458,7 @@ export class CompassGroupIdentifier implements ItemGroupIdentifier {
         tag: "compass",
         displayOverride: CompassGroupIdentifier.DISPLAY_OVERRIDES[otherMods],
         hashProperties: {
-          uses: parseInt(usesMod),
+          uses: this.usesToString(parseInt(usesMod)),
         },
       };
       return group;
