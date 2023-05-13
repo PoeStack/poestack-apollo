@@ -11,7 +11,6 @@ import { OneClickMessageHistory, StashViewItemSummary } from "@prisma/client";
 import ItemGroupingService from "../pricing/item-grouping-service";
 import ItemValueHistoryService from "../pricing/item-value-history-service";
 import {
-  GqlPoeStashTab,
   GqlStashViewSettings,
   GqlStashViewStashSummary,
   GqlStashViewStashSummarySearch,
@@ -20,8 +19,18 @@ import { nanoid } from "nanoid";
 import _ from "lodash";
 import TftOneClickService from "../../services/tft/tft-one-click-service";
 import { PoeApiStashTab } from "@gql/resolvers-types";
-import { GeneralUtils } from "../../utils/general-util";
 import LivePricingService from "../../services/live-pricing/live-pricing-service";
+
+export interface StashViewTab {
+  id: string;
+  parent: string;
+  color: string;
+  folder: boolean;
+  name: string;
+  type: string;
+  index: number;
+  flatIndex: number;
+}
 
 @singleton()
 export default class StashViewService {
@@ -36,14 +45,32 @@ export default class StashViewService {
     private readonly livePricingService: LivePricingService
   ) {}
 
-  public async updateTabs(league: string, userOpaqueKey: string) {
+  public async loadOrRefreshTabs(
+    league: string,
+    userOpaqueKey: string,
+    forceRefresh = false
+  ): Promise<StashViewTab[] | null> {
     const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
       { where: { opaqueKey: userOpaqueKey } }
     );
 
-    const { data: rawStashTabs, rateLimitedForMs } =
-      await this.poeApi.fetchStashTabs(user.oAuthToken, league);
+    const s3Path = `stash/${userOpaqueKey}/${league}/tabs.json`;
+    if (!forceRefresh) {
+      const cachedTabsSummary: { updatedAtTimestamp: Date; tabs: any[] } =
+        await this.s3Service.getJson("poe-stack-stash-view", s3Path);
+      if (
+        cachedTabsSummary &&
+        Date.now() - cachedTabsSummary.updatedAtTimestamp.getTime() <
+          1000 * 60 * 10
+      ) {
+        return cachedTabsSummary.tabs;
+      }
+    }
 
+    const { data: rawStashTabs } = await this.poeApi.fetchStashTabs(
+      user.oAuthToken,
+      league
+    );
     if (rawStashTabs) {
       const flatStashTabs: PoeApiStashTab[] = rawStashTabs.flatMap(
         (stashTab) => {
@@ -54,7 +81,7 @@ export default class StashViewService {
           return res;
         }
       );
-      const mappedTabs: any[] = flatStashTabs.map((tab, i) => ({
+      const mappedTabs: StashViewTab[] = flatStashTabs.map((tab, i) => ({
         id: tab.id,
         parent: tab.parent,
         color: tab?.metadata?.colour,
@@ -65,12 +92,15 @@ export default class StashViewService {
         flatIndex: i,
       }));
 
-      await this.s3Service.putJson(
-        "poe-stack-stash-view",
-        `stash/${userOpaqueKey}/${league}/tabs.json`,
-        { tabs: mappedTabs, updatedAtTimestamp: new Date() }
-      );
+      await this.s3Service.putJson("poe-stack-stash-view", s3Path, {
+        tabs: mappedTabs,
+        updatedAtTimestamp: new Date(),
+      });
+
+      return mappedTabs;
     }
+
+    return null;
   }
 
   public async updateTabsInternal(
@@ -83,15 +113,25 @@ export default class StashViewService {
   ) {
     const now = new Date();
 
-    if (GeneralUtils.random(0, 10) === 5) {
-      await this.updateTabs(league, userOpaqueKey);
-    }
+    const tabs: StashViewTab[] | null = await this.loadOrRefreshTabs(
+      league,
+      userOpaqueKey
+    );
 
     const cachedStashSummary =
       (await this.s3Service.getJson(
         "poe-stack-stash-view",
         `stash/${userOpaqueKey}/${league}/summary.json`
       )) ?? {};
+
+    if (cachedStashSummary) {
+      for (const tabId of Object.keys(cachedStashSummary?.tabs)) {
+        const tab = tabs.find((e) => e.id === tabId);
+        if (!tab) {
+          delete cachedStashSummary.tabs[tabId];
+        }
+      }
+    }
 
     const stashSummary: {
       updatedAtTimestamp: Date;
@@ -110,14 +150,8 @@ export default class StashViewService {
 
     let indexProgress = 0;
 
-    await this.updateJob(jobId, "Fetching token.");
-    const authToken = await this.userService.fetchUserOAuthTokenSafe(userId);
-
     await this.updateJob(jobId, "Fetching tabs.");
-    const tabs = await this.postgresService.prisma.poeStashTab.findMany({
-      where: { userId: userId, league: league, id: { in: initialTabs } },
-      select: { type: true, id: true },
-    });
+    const authToken = await this.userService.fetchUserOAuthTokenSafe(userId);
 
     const tabIds = tabs
       .filter((e) => !["MapStash", "UniqueStash"].includes(e.type))
@@ -131,7 +165,7 @@ export default class StashViewService {
     for (const stashTabId of uniqStashTabIds) {
       await new Promise((res) => setTimeout(res, delayMs));
 
-      while (true) {
+      for (;;) {
         const { data: tab, rateLimitedForMs } = await this.poeApi.fetchStashTab(
           authToken,
           stashTabId,
@@ -283,6 +317,11 @@ export default class StashViewService {
       }
     }
 
+    await this.s3Service.putJson(
+      "poe-stack-stash-view",
+      `stash/${userOpaqueKey}/${league}/summary_header.json`,
+      { updatedAtTimestamp: now }
+    );
     await this.s3Service.putJson(
       "poe-stack-stash-view",
       `stash/${userOpaqueKey}/${league}/summary.json`,

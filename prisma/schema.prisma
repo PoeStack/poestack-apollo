@@ -13,6 +13,7 @@ model ItemGroupInfo {
   key                   String
   tag                   String
   properties            Json
+  hashFields            Json    @default("{}")
   baseType              String?
   icon                  String?
   inventoryMaxStackSize Int?

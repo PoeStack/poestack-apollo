@@ -88,6 +88,7 @@ export default class ItemGroupingService {
           tag: internalGroup.tag,
 
           properties: propertiesArray,
+          hashFields: internalGroup.hashProperties ?? {},
 
           baseType:
             (item.name?.length > 0 ? item.name : null) ??
