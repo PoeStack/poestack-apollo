@@ -8,11 +8,8 @@ import PostgresService from "../mongo/postgres-service";
 import { singleton } from "tsyringe";
 import DiscordService from "../discord-service";
 import { Logger } from "../logger";
-import { S3Service } from "../s3-service";
 import _ from "lodash";
-import { RePoeService } from "../re-poe-service";
 import { PoeLiveListing } from "@prisma/client";
-import { nanoid } from "nanoid";
 
 @singleton()
 export default class PublicStashStreamService {
@@ -23,9 +20,7 @@ export default class PublicStashStreamService {
     private readonly itemGroupingService: ItemGroupingService,
     private readonly itemValueHistoryService: ItemValueHistoryService,
     private readonly postgresService: PostgresService,
-    private readonly discordService: DiscordService,
-    private readonly s3Service: S3Service,
-    private readonly rePoeService: RePoeService
+    private readonly discordService: DiscordService
   ) {}
 
   private diffChangeIds(rawIdOne: string, rawIdTwo: string): number[] {
@@ -68,7 +63,7 @@ export default class PublicStashStreamService {
                 continue;
               }
 
-              let listing = listingsMap[group.hashString];
+              const listing = listingsMap[group.hashString];
               if (!listing) {
                 listingsMap[group.hashString] = {
                   publicStashId: publicStashUpdate.id,

@@ -3,7 +3,6 @@ import LivePricingService from "../services/live-pricing/live-pricing-service";
 import { singleton } from "tsyringe";
 import {
   GqlLivePricingSimpleConfig,
-  GqlLivePricingResult,
   GqlLivePricingSimpleResult,
   GqlLivePricingSummaryConfig,
   GqlLivePricingSummary,
