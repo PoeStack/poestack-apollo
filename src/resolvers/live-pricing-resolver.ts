@@ -4,12 +4,13 @@ import { singleton } from "tsyringe";
 import {
   GqlLivePricingSimpleConfig,
   GqlLivePricingSimpleResult,
-  GqlLivePricingSummaryConfig,
   GqlLivePricingSummary,
   GqlLivePricingSummaryEntry,
+  GqlLivePricingSummarySearch,
 } from "../models/basic-models";
 import { PoeStackContext } from "../index";
 import PostgresService from "../services/mongo/postgres-service";
+import { GqlItemGroup } from "../models/basic-models";
 
 @Resolver()
 @singleton()
@@ -20,13 +21,12 @@ export class LivePricingResolver {
   ) {}
 
   @Query(() => GqlLivePricingSummary)
-  public async livePricingSummary(
+  public async livePricingSummarySearch(
     @Ctx() ctx: PoeStackContext,
-    @Arg("config") config: GqlLivePricingSummaryConfig
+    @Arg("search") search: GqlLivePricingSummarySearch
   ) {
-    const itemGroups = await this.postgresService.prisma.itemGroupInfo.findMany(
-      { where: { hashString: { in: config.itemGroupHashStrings } } }
-    );
+    const itemGroups: GqlItemGroup[] = await this.postgresService.prisma
+      .$queryRaw``;
 
     const out: GqlLivePricingSummary = { entries: [] };
     for (const itemGroup of itemGroups) {
@@ -35,7 +35,7 @@ export class LivePricingResolver {
           itemGroupHashString: itemGroup.hashString,
         },
         {
-          league: config.league,
+          league: search.league,
           valuationConfigs: [
             { listingPercent: 10, quantity: 1 },
             { listingPercent: 10, quantity: 20 },
@@ -44,11 +44,9 @@ export class LivePricingResolver {
       );
 
       const summary: GqlLivePricingSummaryEntry = {
-        itemGroupHashString: itemGroup.hashString,
-        itemGroupKey: itemGroup.key,
+        itemGroup: itemGroup,
         valuation: livePriceResult?.valuations?.[0],
         stockValuation: livePriceResult?.valuations?.[1],
-        icon: itemGroup.icon,
       };
 
       out.entries.push(summary);
