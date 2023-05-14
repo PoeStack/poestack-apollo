@@ -1387,6 +1387,34 @@ export class GqlLivePricingSimpleConfig {
   listingPercent?: number;
 }
 
+@InputType("StashViewSnapshotRecordUpdateInput")
+export class GqlStashViewSnapshotRecordUpdateInput {
+  @Field()
+  league: string;
+  @Field()
+  timestamp: Date;
+
+  @Field()
+  favorited: boolean;
+  @Field({ nullable: true })
+  name?: string;
+}
+
+@ObjectType("StashViewSnapshotRecord")
+export class GqlStashViewSnapshotRecord {
+  @Field()
+  userId: string;
+  @Field()
+  league: string;
+  @Field()
+  timestamp: Date;
+
+  @Field()
+  favorited: boolean;
+  @Field({ nullable: true })
+  name?: string;
+}
+
 @ObjectType("LivePricingSummaryEntry")
 export class GqlLivePricingSummaryEntry {
   @Field()

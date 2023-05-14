@@ -288,14 +288,15 @@ model StashViewValueSnapshot {
   @@index([userId])
 }
 
-model StashViewTabSnapshotRecord {
-  userId  String
-  league  String
-  stashId String
-
+model StashViewSnapshotRecord {
+  userId    String
+  league    String
   timestamp DateTime
 
-  @@id([userId, league, stashId])
+  favorited Boolean
+  name      String?
+
+  @@id([userId, league, timestamp])
   @@index([userId])
 }
 
@@ -309,33 +310,6 @@ model StashViewAutomaticSnapshotSettings {
   nextSnapshotTimestamp           DateTime
 
   @@id([userId, league])
-}
-
-model StashViewItemSummary {
-  itemId String
-  userId String
-  league String
-
-  stashId String
-
-  x        Int
-  y        Int
-  quantity Int
-
-  searchableString String
-
-  itemGroupHashString String?
-  itemGroupTag        String?
-
-  icon String?
-
-  iconId   String?
-  category String[]
-
-  @@id([userId, stashId, x, y])
-  @@index([userId])
-  @@index([stashId])
-  @@index([league])
 }
 
 model TftLiveListing {

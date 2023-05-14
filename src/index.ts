@@ -42,6 +42,7 @@ import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
 import { PoeStackResolver } from "./resolvers/poestack-resolver";
 import { LivePricingResolver } from "./resolvers/live-pricing-resolver";
 import LivePricingHistoryService from "./services/live-pricing/live-pricing-history-service";
+import StashViewSnapshotService from './services/stash-view/stash-view-snapshot-service';
 
 dotenv.config({ path: ".env.local" });
 
@@ -197,7 +198,7 @@ process
   }
 
   if (process.env.START_STASH_VIEW_AUTOMATIC_SNAPSHOTS === "true") {
-    container.resolve(StashViewService).startAutomaticSnapshotJob();
+    container.resolve(StashViewSnapshotService).startAutomaticSnapshotJob();
   }
 
   if (process.env.START_ONE_CLICK_JOB === "true") {

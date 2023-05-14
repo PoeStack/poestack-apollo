@@ -1,12 +1,12 @@
 import {
   GqlStashViewAutomaticSnapshotSettings,
   GqlStashViewAutomaticSnapshotSettingsInput,
-  GqlStashViewItemSummary,
   GqlStashViewJob,
   GqlStashViewSettings,
   GqlStashViewSnapshotInput,
+  GqlStashViewSnapshotRecord,
+  GqlStashViewSnapshotRecordUpdateInput,
   GqlStashViewStashSummary,
-  GqlStashViewStashSummarySearch,
   GqlStashViewValueSnapshotSeries,
 } from "./../models/basic-models";
 import { PoeStackContext } from "./../index";
@@ -17,14 +17,16 @@ import PostgresService from "../services/mongo/postgres-service";
 import StashViewService from "../services/stash-view/stash-view-service";
 import _ from "lodash";
 import { GraphQLBoolean } from "graphql";
-import { GraphQLJSON } from "graphql-scalars";
+import StashViewSnapshotService from "../services/stash-view/stash-view-snapshot-service";
+import { SNAPSHOT_FAVORITE_LIMITS_BY_PATREON_TIER } from "../services/stash-view/stash-view-snapshot-service";
 
 @Resolver()
 @singleton()
 export class StashViewResolver {
   constructor(
     private readonly postgresService: PostgresService,
-    private readonly stashViewService: StashViewService
+    private readonly stashViewService: StashViewService,
+    private readonly stashViewSnapshotService: StashViewSnapshotService
   ) {}
 
   @Mutation(() => Boolean)
@@ -33,6 +35,69 @@ export class StashViewResolver {
       where: { userId: ctx.userId },
     });
     return true;
+  }
+
+  @Mutation(() => Boolean)
+  async stashViewUpdateSnapshotRecord(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("input") input: GqlStashViewSnapshotRecordUpdateInput
+  ) {
+    if (input.favorited) {
+      const currentSnapshot =
+        await this.postgresService.prisma.stashViewSnapshotRecord.findFirstOrThrow(
+          {
+            where: {
+              userId: ctx.userId,
+              league: input.league,
+              timestamp: input.timestamp,
+            },
+          }
+        );
+
+      if (!currentSnapshot.favorited) {
+        const user =
+          await this.postgresService.prisma.userProfile.findFirstOrThrow({
+            where: { userId: ctx.userId },
+          });
+        const favoriteLimit =
+          SNAPSHOT_FAVORITE_LIMITS_BY_PATREON_TIER[user.patreonTier] ?? 1;
+        const favoritedSnapshotCount =
+          await this.postgresService.prisma.stashViewSnapshotRecord.count({
+            where: { userId: ctx.userId, league: input.league },
+          });
+
+        if (favoritedSnapshotCount + 1 > favoriteLimit) {
+          throw new Error(
+            `Your current Patreon tier is limited to ${favoriteLimit} favorite(s).`
+          );
+        }
+      }
+    }
+
+    await this.postgresService.prisma.stashViewSnapshotRecord.update({
+      where: {
+        userId_league_timestamp: {
+          league: input.league,
+          userId: ctx.userId,
+          timestamp: input.timestamp,
+        },
+      },
+      data: { name: input.name, favorited: input.favorited },
+    });
+    return true;
+  }
+
+  @Query(() => [GqlStashViewSnapshotRecord])
+  async stashViewSnapshotRecords(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("league") league: string
+  ) {
+    const res =
+      await this.postgresService.prisma.stashViewSnapshotRecord.findMany({
+        where: { userId: ctx.userId, league: league },
+        orderBy: { timestamp: "desc" },
+      });
+    return res;
   }
 
   @Mutation(() => String)
@@ -45,12 +110,12 @@ export class StashViewResolver {
         where: { userId: ctx.userId },
       }
     );
-    const jobId = await this.stashViewService.takeSnapshot(
-      user.userId,
-      user.opaqueKey,
-      input.league,
-      input.stashIds
-    );
+    const jobId = await this.stashViewSnapshotService.takeSnapshot({
+      userId: user.userId,
+      userOpaqueKey: user.opaqueKey,
+      league: input.league,
+      selectedTabIds: input.stashIds,
+    });
     return jobId;
   }
 

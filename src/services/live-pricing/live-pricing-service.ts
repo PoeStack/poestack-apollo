@@ -73,6 +73,10 @@ export default class LivePricingService {
           e.listingPercent === config.listingPercent &&
           e.quantity === input.quantity
       )?.value;
+
+      //TODO Remove these.
+      input["valueChaos"] = input["fixedValue"];
+      input["totalValueChaos"] = input["fixedValue"] * input.quantity;
     }
     sw.stop();
     Logger.info("live pricing inject", {
@@ -162,7 +166,7 @@ export default class LivePricingService {
     const minDate = Date.now() - 1000 * 60 * 60 * 3;
 
     //Attempting to find all listings within our quantity bracket within the last hour, but exceed the last hour if we found less than 30 listings
-    let validListings = [];
+    const validListings = [];
     for (const listing of allListings) {
       if (
         validListings.length >= 450 &&
