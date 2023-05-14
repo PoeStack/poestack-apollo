@@ -59,8 +59,8 @@ export default class StashViewService {
       const cachedTabsSummary: { updatedAtTimestamp: Date; tabs: any[] } =
         await this.s3Service.getJson("poe-stack-stash-view", s3Path);
       if (
-        cachedTabsSummary &&
-        Date.now() - cachedTabsSummary.updatedAtTimestamp.getTime() <
+        cachedTabsSummary?.updatedAtTimestamp &&
+        Date.now() - new Date(cachedTabsSummary.updatedAtTimestamp).getTime() <
           1000 * 60 * 10
       ) {
         return cachedTabsSummary.tabs;
@@ -108,7 +108,7 @@ export default class StashViewService {
     userId: string,
     userOpaqueKey: string,
     league: string,
-    initialTabs: string[],
+    selectedTabIds: string[],
     delayMs: number
   ) {
     const now = new Date();
@@ -154,7 +154,11 @@ export default class StashViewService {
     const authToken = await this.userService.fetchUserOAuthTokenSafe(userId);
 
     const tabIds = tabs
-      .filter((e) => !["MapStash", "UniqueStash"].includes(e.type))
+      .filter(
+        (e) =>
+          selectedTabIds.includes(e.id) &&
+          !["MapStash", "UniqueStash"].includes(e.type)
+      )
       .map((e) => e.id);
 
     await this.updateJob(
