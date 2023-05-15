@@ -349,6 +349,19 @@ model LivePricingHistoryHourEntry {
   @@index([timestamp])
 }
 
+model LivePricingHistoryDayEntry {
+  itemGroupHashString  String
+  league               String
+  type                 String
+  value                Float
+  minQuantityInclusive Int
+  timestamp            DateTime
+
+  @@id([itemGroupHashString, league, type, minQuantityInclusive, timestamp])
+  @@index([itemGroupHashString])
+  @@index([timestamp])
+}
+
 model LivePricingHistoryFixedLastEntry {
   itemGroupHashString String
   league              String

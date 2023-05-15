@@ -15,10 +15,13 @@ export default class LivePricingHistoryService {
 
   //Shard item groups as well?
 
-  public async updateHistory(activeItemGroup: {
-    league: string;
-    itemGroupHashString: string;
-  }) {
+  public async updateHistory(
+    activeItemGroup: {
+      league: string;
+      itemGroupHashString: string;
+    },
+    config: { updateDailyHistory: boolean }
+  ) {
     const valuationConfigs: LivePricingValuationConfig[] = [];
 
     for (const listingPercent of [5, 10, 15, 20, 30, 50]) {
@@ -91,15 +94,40 @@ export default class LivePricingHistoryService {
         }
       );
     }
+
+    if (config.updateDailyHistory) {
+      const dailyyTimestamp = new Date(
+        updatedAtEpochMs - (updatedAtEpochMs % (3600000 * 24))
+      );
+
+      for (const entry of hourlyEntires) {
+        await this.postgresService.prisma.livePricingHistoryDayEntry.upsert({
+          where: {
+            itemGroupHashString_league_type_minQuantityInclusive_timestamp: {
+              itemGroupHashString: entry.itemGroupHashString,
+              league: entry.league,
+              minQuantityInclusive: entry.minQuantityInclusive,
+              timestamp: dailyyTimestamp,
+              type: entry.type,
+            },
+          },
+          create: entry,
+          update: { value: entry.value },
+        });
+      }
+    }
   }
 
   public async startBackgroundJob() {
+    let runsComplete = 0;
     for (;;) {
       try {
         const activeItemGroups = await this.fetchPublicStashActiveItemGroups();
         for (const activeItemGroup of activeItemGroups) {
           try {
-            await this.updateHistory(activeItemGroup);
+            await this.updateHistory(activeItemGroup, {
+              updateDailyHistory: runsComplete % 3 === 0,
+            });
           } catch (error) {
             Logger.error("live pricing history error", { error: error });
           }
@@ -107,6 +135,7 @@ export default class LivePricingHistoryService {
       } catch (error) {
         Logger.error("live pricing history error", { error: error });
       }
+      runsComplete++;
     }
   }
 
