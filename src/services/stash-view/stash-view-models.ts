@@ -8,7 +8,6 @@ export interface StashViewItemEntry {
 
 export interface StashViewTrackedItemEntry extends StashViewItemEntry {
   itemGroupHashString: string;
-  value: number;
   fixedValue: number;
   stockValue: number;
   valueChaos: number;

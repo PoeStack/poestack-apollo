@@ -1,3 +1,4 @@
+import { StashViewUtil } from "./stash-view-util";
 import { GqlStashViewItemSummary } from "../../models/basic-models";
 import { StashViewExporters } from "./stash-view-exporters";
 
@@ -46,7 +47,9 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
         "insanity",
         "horror",
         "delirium",
-      ].some((s) => item.searchableString.includes(s)),
+      ].some(
+        (s) => !!StashViewUtil.itemEntryToName(item)?.toLowerCase()?.includes(s)
+      ),
   },
   essence: {
     tags: ["essence"],

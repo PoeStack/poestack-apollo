@@ -38,6 +38,24 @@ export class StashViewResolver {
   }
 
   @Mutation(() => Boolean)
+  async stashViewRefreshTabs(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("league") league: string
+  ) {
+    const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
+      {
+        where: { userId: ctx.userId },
+      }
+    );
+    await this.stashViewSnapshotService.loadOrRefreshTabs(
+      league,
+      user.opaqueKey,
+      true
+    );
+    return true;
+  }
+
+  @Mutation(() => Boolean)
   async stashViewUpdateSnapshotRecord(
     @Ctx() ctx: PoeStackContext,
     @Arg("input") input: GqlStashViewSnapshotRecordUpdateInput

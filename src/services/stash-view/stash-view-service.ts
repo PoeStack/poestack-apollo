@@ -12,6 +12,13 @@ import {
   GqlStashViewStashSummarySearch,
 } from "../../models/basic-models";
 import TftOneClickService from "../../services/tft/tft-one-click-service";
+import { StashViewUtil } from "./stash-view-util";
+import {
+  StashViewSnapshotGrouped,
+  StashViewSnapshotItemGroups,
+  StashViewSnapshotUntracked,
+  StashViewUntrackedItemEntry,
+} from "./stash-view-models";
 
 @singleton()
 export default class StashViewService {
@@ -36,9 +43,10 @@ export default class StashViewService {
       input.valueOverridesEnabled = false;
     }
 
-    const summary = await this.fetchStashViewTabSummary(opaqueKey, {
-      league: input.league,
-    });
+    const summary = await this.fetchMostRecentStashSummary(
+      input.league,
+      opaqueKey
+    );
 
     const listingBody: string = tftCategory.export(summary, null, input);
     return listingBody;
@@ -99,33 +107,80 @@ export default class StashViewService {
     return listingBody;
   }
 
-  public async fetchStashViewTabSummary(
+  public async fetchMostRecentStashSummary(
+    league: string,
+    opaqueKey: string
+  ): Promise<
+    (GqlStashViewStashSummary & { updatedAtTimestamp?: string }) | null
+  > {
+    const currentSnapshot = await this.s3Service.getJson(
+      "poe-stack-stash-view",
+      `v1/stash/${opaqueKey}/${league}/snapshots/current_snapshot.json`
+    );
+    if (currentSnapshot) {
+      return await this.fetchStashSummary(
+        league,
+        opaqueKey,
+        currentSnapshot.timestamp
+      );
+    }
+
+    return null;
+  }
+
+  public async fetchStashSummary(
+    league: string,
     opaqueKey: string,
-    search: GqlStashViewStashSummarySearch
-  ): Promise<GqlStashViewStashSummary> {
-    const summaryJson = await this.s3Service.getJson(
+    timestampISO: string
+  ): Promise<GqlStashViewStashSummary & { updatedAtTimestamp?: string }> {
+    const trackedJson: StashViewSnapshotGrouped = await this.s3Service.getJson(
       "poe-stack-stash-view",
-      `stash/${opaqueKey}/${search.league}/summary.json`
+      `v1/stash/${opaqueKey}/${league}/snapshots/${timestampISO}/tracked.json`
     );
-    const itemGroupsJson = await this.s3Service.getJson(
-      "poe-stack-stash-view",
-      `stash/${opaqueKey}/${search.league}/summary_item_groups.json`
-    );
+    const untrackedJson: StashViewSnapshotUntracked =
+      await this.s3Service.getJson(
+        "poe-stack-stash-view",
+        `v1/stash/${opaqueKey}/${league}/snapshots/${timestampISO}/untracked.json`
+      );
+    const itemGroupsJson: StashViewSnapshotItemGroups =
+      await this.s3Service.getJson(
+        "poe-stack-stash-view",
+        `v1/stash/${opaqueKey}/${league}/snapshots/${timestampISO}/item_groups.json`
+      );
 
-    const items: any[] = Object.values(summaryJson?.tabs ?? {}).flatMap(
-      (e: any) => e.itemSummaries
-    );
-    const mapping = {
-      itemGroups: Object.values(itemGroupsJson.itemGroups),
-      items: items.map((e) => ({
-        ...e,
-        league: search.league,
-        itemGroup: e.itemGroupHashString
-          ? itemGroupsJson.itemGroups[e.itemGroupHashString]
-          : null,
-      })),
-    };
+    if (!trackedJson || !untrackedJson || !itemGroupsJson) {
+      return {
+        itemGroups: [],
+        items: [],
+      };
+    } else {
+      const items: any[] = [];
 
-    return mapping as GqlStashViewStashSummary;
+      for (const [stashId, entries] of [
+        ...Object.entries(trackedJson.entriesByTab),
+        ...Object.entries(untrackedJson.entriesByTab),
+      ]) {
+        for (const item of entries) {
+          const itemGroup =
+            "itemGroupHashString" in item
+              ? itemGroupsJson.itemGroups.find(
+                  (ig) => ig.hashString === item.itemGroupHashString
+                )
+              : null;
+          items.push({
+            ...item,
+            stashId: stashId,
+            league: league as string,
+            itemGroup: itemGroup,
+          });
+        }
+      }
+
+      return {
+        itemGroups: itemGroupsJson.itemGroups,
+        updatedAtTimestamp: `${trackedJson.timestamp}`,
+        items: items,
+      };
+    }
   }
 }

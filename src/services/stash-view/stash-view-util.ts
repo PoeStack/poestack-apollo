@@ -1,8 +1,14 @@
+import { GeneralUtils } from "../../utils/general-util";
 import {
   GqlStashViewItemSummary,
   GqlStashViewSettings,
   GqlStashViewStashSummary,
 } from "./../../models/basic-models";
+import {
+  StashViewSnapshotGrouped,
+  StashViewSnapshotItemGroups,
+  StashViewSnapshotUntracked,
+} from "./stash-view-models";
 import { STASH_VIEW_TFT_CATEGORIES } from "./stash-view-tft-categories";
 
 export class StashViewUtil {
@@ -67,7 +73,10 @@ export class StashViewUtil {
     const filters: ((item: GqlStashViewItemSummary) => boolean)[] = [
       (e) =>
         settings.searchString.trim().length === 0 ||
-        e.searchableString.includes(settings.searchString.toLowerCase()),
+        !!StashViewUtil.itemEntryToName(e)
+          ?.toLocaleLowerCase()
+          ?.includes(settings.searchString.toLowerCase()),
+      ,
       (e) =>
         (!settings.minItemQuantity || settings.minItemQuantity <= e.quantity) &&
         (!settings.minItemStackValue ||
@@ -92,7 +101,7 @@ export class StashViewUtil {
 
           return (
             !settings.checkedTags ||
-            settings.checkedTags.some((t) => t === e.itemGroupTag)
+            settings.checkedTags.some((t) => t === e.itemGroup?.tag)
           );
         }
         return true;
@@ -109,6 +118,14 @@ export class StashViewUtil {
       reduceStack ? StashViewUtil.reduceItemStacks(prefilter) : prefilter
     ).filter((e) => filters.every((f) => f(e)));
     return result;
+  }
+
+  public static itemEntryToName(item) {
+    return GeneralUtils.capitalize(
+      item.searchableString ??
+        item?.itemGroup?.displayName ??
+        item?.itemGroup?.key
+    );
   }
 
   private static reduceItemStacks(

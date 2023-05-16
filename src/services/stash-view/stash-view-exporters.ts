@@ -320,7 +320,7 @@ export class StashViewExporters {
       stashSettings.chaosToDivRate!
     )} :chaos: / 1 :divine:]\nMost Valuable: ${filteredItems
       .slice(0, 5)
-      .map((e) => GeneralUtils.capitalize(e.searchableString))
+      .map((e) => StashViewUtil.itemEntryToName(e))
       .join(", ")}`;
 
     return StashViewUtil.smartLimitOutput(2000, header, output, null);

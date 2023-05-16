@@ -99,7 +99,9 @@ export default class StashViewSnapshotService {
     const res: { entriesByTab: Record<string, StashViewItemEntry[]> } =
       await this.s3Service.getJson(
         "poe-stack-stash-view",
-        `stash/${ctx.config.userOpaqueKey}/${ctx.config.league}/snapshots/${timestamp}/${type}.json`
+        `v1/stash/${ctx.config.userOpaqueKey}/${
+          ctx.config.league
+        }/snapshots/${timestamp.toISOString()}/${type}.json`
       );
 
     if (!res?.entriesByTab) {
@@ -177,7 +179,6 @@ export default class StashViewSnapshotService {
                 y: item.y,
                 quantity: item.stackSize ?? 1,
                 itemGroupHashString: group.hashString,
-                value: 0,
                 fixedValue: 0,
                 stockValue: 0,
                 valueChaos: 0,
@@ -208,7 +209,7 @@ export default class StashViewSnapshotService {
 
           await this.s3Service.putJson(
             "poe-stack-stash-view",
-            `stash/${config.userOpaqueKey}/${config.league}/tabs/${tab.id}.json`,
+            `v1/stash/${config.userOpaqueKey}/${config.league}/tabs/${tab.id}.json`,
             tab
           );
 
@@ -247,17 +248,28 @@ export default class StashViewSnapshotService {
 
     await this.s3Service.putJson(
       "poe-stack-stash-view",
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${ctx.timestamp}/header.json`,
+      `v1/stash/${config.userOpaqueKey}/${config.league}/snapshots/current_snapshot.json`,
+      { timestamp: ctx.timestamp.toISOString() }
+    );
+    await this.s3Service.putJson(
+      "poe-stack-stash-view",
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${ctx.timestamp.toISOString()}/header.json`,
       ctx.snapshotHeader
     );
     await this.s3Service.putJson(
       "poe-stack-stash-view",
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${ctx.timestamp}/tracked.json`,
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${ctx.timestamp.toISOString()}/tracked.json`,
       ctx.stashViewSnapshotTracked
     );
     await this.s3Service.putJson(
       "poe-stack-stash-view",
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${ctx.timestamp}/untracked.json`,
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${ctx.timestamp.toISOString()}/untracked.json`,
       ctx.stashViewSnapshotUntracked
     );
 
@@ -277,7 +289,9 @@ export default class StashViewSnapshotService {
     };
     await this.s3Service.putJson(
       "poe-stack-stash-view",
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${ctx.timestamp}/item_groups.json`,
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${ctx.timestamp.toISOString()}/item_groups.json`,
       stashViewSnapshotItemGroups
     );
   }
@@ -330,10 +344,18 @@ export default class StashViewSnapshotService {
     timestamp: Date;
   }) {
     const keys = [
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${config.timestamp}/item_groups.json`,
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${config.timestamp}/untracked.json`,
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${config.timestamp}/tracked.json`,
-      `stash/${config.userOpaqueKey}/${config.league}/snapshots/${config.timestamp}/header.json`,
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${config.timestamp.toISOString()}/item_groups.json`,
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${config.timestamp.toISOString()}/untracked.json`,
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${config.timestamp.toISOString()}/tracked.json`,
+      `v1/stash/${config.userOpaqueKey}/${
+        config.league
+      }/snapshots/${config.timestamp.toISOString()}/header.json`,
     ];
 
     for (const key of keys) {
@@ -383,7 +405,7 @@ export default class StashViewSnapshotService {
       { where: { opaqueKey: userOpaqueKey } }
     );
 
-    const s3Path = `stash/${userOpaqueKey}/${league}/tabs.json`;
+    const s3Path = `v1/stash/${userOpaqueKey}/${league}/tabs.json`;
     if (!forceRefresh) {
       const cachedTabsSummary: {
         updatedAtTimestamp: Date;
