@@ -9,7 +9,9 @@ export interface StashViewItemEntry {
 export interface StashViewTrackedItemEntry extends StashViewItemEntry {
   itemGroupHashString: string;
   fixedValue: number;
-  stockValue: number;
+  lpValue: number;
+  lpStockValue: number;
+
   valueChaos: number;
   totalValueChaos: number;
 }
@@ -19,9 +21,17 @@ export interface StashViewUntrackedItemEntry extends StashViewItemEntry {
   icon: string;
 }
 
+export interface StashViewSnapshotValuations {
+  fixedValue: number;
+  lpValue: number;
+  lpStockValue: number;
+}
+
 export interface StashViewSnapshotHeader {
   userId: string;
   timestamp: Date;
+  totalValues: StashViewSnapshotValuations;
+  totalValuesByTab: Record<string, StashViewSnapshotValuations>;
 }
 
 export interface StashViewSnapshotGrouped {

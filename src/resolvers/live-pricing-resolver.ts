@@ -26,7 +26,12 @@ export class LivePricingResolver {
     @Arg("search") search: GqlLivePricingSummarySearch
   ) {
     const itemGroups: GqlItemGroup[] = await this.postgresService.prisma
-      .$queryRaw``;
+      .$queryRaw`
+      select * from "ItemGroupInfo" i 
+      left join "LivePricingHistoryFixedLastEntry" f on i."hashString" = f."itemGroupHashString"
+      where f."league" = ${search.league} and i."tag" = ${search.tag} and f."value" is not null
+      order by f."value" desc
+      offset ${search.offSet} limit 40`;
 
     const out: GqlLivePricingSummary = { entries: [] };
     for (const itemGroup of itemGroups) {

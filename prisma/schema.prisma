@@ -283,7 +283,12 @@ model StashViewValueSnapshot {
   stashId String
 
   timestamp DateTime
-  value     Float
+
+  value Float
+
+  lpValue      Float?
+  lpStockValue Float?
+  fixedValue   Float?
 
   @@index([userId])
 }
@@ -295,6 +300,10 @@ model StashViewSnapshotRecord {
 
   favorited Boolean
   name      String?
+
+  lpValue      Float?
+  lpStockValue Float?
+  fixedValue   Float?
 
   @@id([userId, league, timestamp])
   @@index([userId])

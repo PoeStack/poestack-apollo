@@ -1412,6 +1412,13 @@ export class GqlStashViewSnapshotRecord {
   favorited: boolean;
   @Field({ nullable: true })
   name?: string;
+
+  @Field({ nullable: true })
+  fixedValue?: number;
+  @Field({ nullable: true })
+  lpValue?: number;
+  @Field({ nullable: true })
+  lpStockValue?: number;
 }
 
 @ObjectType("LivePricingSummaryEntry")

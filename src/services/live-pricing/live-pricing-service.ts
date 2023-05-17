@@ -46,6 +46,14 @@ export default class LivePricingService {
   ) {
     const sw = new StopWatch(true);
     for (const input of inputs) {
+      [
+        "lpValue",
+        "lpStockValue",
+        "fixedValue",
+        "totalValueChaos",
+        "valueChaos",
+      ].forEach((e) => delete input[e]);
+
       const result = await this.livePrice(input, {
         league: config.league,
         valuationConfigs: [
@@ -58,17 +66,17 @@ export default class LivePricingService {
         ],
       });
 
-      if (!result) {
+      if (!result || result.allListingsLength <= 9) {
         continue;
       }
 
       input["fixedValue"] = result.valuations.find(
         (e) => e.listingPercent === 10 && e.quantity === 1
       )?.value;
-      input["targetValue"] = result.valuations.find(
+      input["lpValue"] = result.valuations.find(
         (e) => e.listingPercent === config.listingPercent && e.quantity === 1
       )?.value;
-      input["stockValue"] = result.valuations.find(
+      input["lpStockValue"] = result.valuations.find(
         (e) =>
           e.listingPercent === config.listingPercent &&
           e.quantity === input.quantity

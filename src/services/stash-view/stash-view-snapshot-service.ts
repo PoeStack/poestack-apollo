@@ -20,7 +20,10 @@ import {
   StashViewSnapshotHeader,
   StashViewSnapshotItemGroups,
 } from "./stash-view-models";
-import { UserProfile } from "@prisma/client";
+import {
+  StashViewAutomaticSnapshotSettings,
+  UserProfile,
+} from "@prisma/client";
 
 @singleton()
 export default class StashViewSnapshotService {
@@ -36,6 +39,7 @@ export default class StashViewSnapshotService {
   public async snapsnotInternal(ctx: StashViewSnapshotContext) {
     await this.loadInitialContext(ctx);
     await this.loadTabItems(ctx);
+    await this.injectAndWriteValuations(ctx);
     await this.recordSnapshotAndCleanOldSnapshots(ctx);
     await this.uploadSnapshotToS3(ctx);
     await this.updateJob(ctx.jobId, `Complete.`);
@@ -52,6 +56,8 @@ export default class StashViewSnapshotService {
     ctx.snapshotHeader = {
       userId: config.userId,
       timestamp: ctx.timestamp,
+      totalValuesByTab: {},
+      totalValues: { fixedValue: 0, lpValue: 0, lpStockValue: 0 },
     };
 
     const lastSnapshotRecord =
@@ -180,7 +186,8 @@ export default class StashViewSnapshotService {
                 quantity: item.stackSize ?? 1,
                 itemGroupHashString: group.hashString,
                 fixedValue: 0,
-                stockValue: 0,
+                lpStockValue: 0,
+                lpValue: 0,
                 valueChaos: 0,
                 totalValueChaos: 0,
               });
@@ -202,11 +209,6 @@ export default class StashViewSnapshotService {
             `Writing tab ${indexProgress}/${tabIds.length}.`
           );
 
-          await this.livePricingService.injectPrices(trackedItems, {
-            league: config.league,
-            listingPercent: 10,
-          });
-
           await this.s3Service.putJson(
             "poe-stack-stash-view",
             `v1/stash/${config.userOpaqueKey}/${config.league}/tabs/${tab.id}.json`,
@@ -215,21 +217,6 @@ export default class StashViewSnapshotService {
 
           ctx.stashViewSnapshotTracked.entriesByTab[tab.id] = trackedItems;
           ctx.stashViewSnapshotUntracked.entriesByTab[tab.id] = untrackedItems;
-
-          const stashTotalFixedValue = trackedItems.reduce(
-            (p, c) => p + c.fixedValue * c.quantity,
-            0
-          );
-          await this.postgresService.prisma.stashViewValueSnapshot.create({
-            data: {
-              id: nanoid(),
-              userId: config.userId,
-              league: config.league,
-              stashId: stashTabId,
-              timestamp: ctx.timestamp,
-              value: stashTotalFixedValue,
-            },
-          });
 
           indexProgress++;
           await this.updateJob(
@@ -240,6 +227,48 @@ export default class StashViewSnapshotService {
 
         break;
       }
+    }
+  }
+
+  private async injectAndWriteValuations(ctx: StashViewSnapshotContext) {
+    for (const tabId of Object.keys(
+      ctx.stashViewSnapshotTracked.entriesByTab
+    )) {
+      const trackedItems = ctx.stashViewSnapshotTracked.entriesByTab[tabId];
+      await this.livePricingService.injectPrices(trackedItems, {
+        league: ctx.config.league,
+        listingPercent: 10,
+      });
+
+      const stashTotalValues = { fixedValue: 0, lpValue: 0, lpStockValue: 0 };
+
+      for (const trackedItem of trackedItems) {
+        stashTotalValues.fixedValue +=
+          (trackedItem.fixedValue ?? 0) * (trackedItem.quantity ?? 1);
+        stashTotalValues.lpValue +=
+          (trackedItem.lpValue ?? 0) * (trackedItem.quantity ?? 1);
+        stashTotalValues.lpStockValue +=
+          (trackedItem.lpStockValue ?? 0) * (trackedItem.quantity ?? 1);
+      }
+      ctx.snapshotHeader.totalValues.lpValue += stashTotalValues.lpValue;
+      ctx.snapshotHeader.totalValues.lpStockValue +=
+        stashTotalValues.lpStockValue;
+      ctx.snapshotHeader.totalValues.fixedValue += stashTotalValues.fixedValue;
+      ctx.snapshotHeader.totalValuesByTab[tabId] = stashTotalValues;
+
+      await this.postgresService.prisma.stashViewValueSnapshot.create({
+        data: {
+          id: nanoid(),
+          userId: ctx.config.userId,
+          league: ctx.config.league,
+          stashId: tabId,
+          timestamp: ctx.timestamp,
+          value: stashTotalValues.fixedValue,
+          fixedValue: stashTotalValues.fixedValue,
+          lpValue: stashTotalValues.lpValue,
+          lpStockValue: stashTotalValues.lpStockValue,
+        },
+      });
     }
   }
 
@@ -306,6 +335,9 @@ export default class StashViewSnapshotService {
         userId: config.userId,
         timestamp: ctx.timestamp,
         favorited: false,
+        fixedValue: ctx.snapshotHeader.totalValues.fixedValue,
+        lpValue: ctx.snapshotHeader.totalValues.lpValue,
+        lpStockValue: ctx.snapshotHeader.totalValues.lpStockValue,
       },
     });
 
@@ -467,66 +499,77 @@ export default class StashViewSnapshotService {
     });
   }
 
+  private async runAutomaticSnapshotWorker(
+    snapshotJobs: StashViewAutomaticSnapshotSettings[]
+  ) {
+    while (snapshotJobs.length) {
+      const job = snapshotJobs.shift();
+      try {
+        const jobId = `automatic__${nanoid()}`;
+        await this.postgresService.prisma.stashViewSnapshotJob.create({
+          data: {
+            id: jobId,
+            userId: job.userId,
+            timestamp: new Date(),
+            status: "starting",
+          },
+        });
+
+        await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.update(
+          {
+            where: {
+              userId_league: { userId: job.userId, league: job.league },
+            },
+            data: {
+              nextSnapshotTimestamp: new Date(
+                Date.now() + job.durationBetweenSnapshotsSeconds * 1000
+              ),
+            },
+          }
+        );
+
+        const user =
+          await this.postgresService.prisma.userProfile.findFirstOrThrow({
+            where: { userId: job.userId },
+          });
+
+        await this.snapsnotInternal({
+          jobId: jobId,
+          timestamp: new Date(),
+          user: user,
+          config: {
+            userId: user.userId,
+            userOpaqueKey: user.opaqueKey,
+            league: job.league,
+            selectedTabIds: job.stashIds,
+            delayMs: 10,
+          },
+        });
+      } catch (error) {
+        Logger.error("error in automatic stash snapshot job", job, error);
+      }
+    }
+  }
+
   public async startAutomaticSnapshotJob() {
     for (;;) {
-      await new Promise((res) => setTimeout(res, 1000 * 30));
       try {
-        const snapshotJobs =
-          await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.findMany(
-            {
-              where: {
-                nextSnapshotTimestamp: { lte: new Date() },
-                stashIds: { isEmpty: false },
-              },
-            }
-          );
+        const snapshotJobs: StashViewAutomaticSnapshotSettings[] = await this
+          .postgresService.prisma.$queryRaw`
+          select * from "StashViewAutomaticSnapshotSettings" s
+          left join "UserProfile" up on up."userId" = s."userId"
+          where up."oAuthToken" is not null 
+          and "nextSnapshotTimestamp" < now() at time zone 'utc' - INTERVAL '1 min' 
+          and array_length("stashIds", 1) > 0
+          and up."lastConnectedTimestamp" > now() at time zone 'utc' - INTERVAL '6 hour'
+          order by random()
+          limit 500`;
 
-        for (const job of snapshotJobs) {
-          try {
-            const jobId = `automatic__${nanoid()}`;
-            await this.postgresService.prisma.stashViewSnapshotJob.create({
-              data: {
-                id: jobId,
-                userId: job.userId,
-                timestamp: new Date(),
-                status: "starting",
-              },
-            });
-
-            await this.postgresService.prisma.stashViewAutomaticSnapshotSettings.update(
-              {
-                where: {
-                  userId_league: { userId: job.userId, league: job.league },
-                },
-                data: {
-                  nextSnapshotTimestamp: new Date(
-                    Date.now() + job.durationBetweenSnapshotsSeconds * 1000
-                  ),
-                },
-              }
-            );
-
-            const user =
-              await this.postgresService.prisma.userProfile.findFirstOrThrow({
-                where: { userId: job.userId },
-              });
-
-            await this.snapsnotInternal({
-              jobId: jobId,
-              timestamp: new Date(),
-              user: user,
-              config: {
-                userId: user.userId,
-                userOpaqueKey: user.opaqueKey,
-                league: job.league,
-                selectedTabIds: job.stashIds,
-                delayMs: 1000,
-              },
-            });
-          } catch (error) {
-            Logger.error("error in automatic stash snapshot job", job, error);
-          }
+        const promises = [];
+        for (let i = 0; i <= 30; i++) {
+          promises.push(this.runAutomaticSnapshotWorker(snapshotJobs));
         }
+        await Promise.all(promises);
       } catch (error) {
         Logger.error("error in automatic stash snapshot job", error);
       }
