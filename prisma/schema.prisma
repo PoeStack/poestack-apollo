@@ -13,6 +13,7 @@ model ItemGroupInfo {
   key                   String
   tag                   String
   properties            Json
+  hashFields            Json    @default("{}")
   baseType              String?
   icon                  String?
   inventoryMaxStackSize Int?
@@ -282,19 +283,29 @@ model StashViewValueSnapshot {
   stashId String
 
   timestamp DateTime
-  value     Float
+
+  value Float
+
+  lpValue      Float?
+  lpStockValue Float?
+  fixedValue   Float?
 
   @@index([userId])
 }
 
-model StashViewTabSnapshotRecord {
-  userId  String
-  league  String
-  stashId String
-
+model StashViewSnapshotRecord {
+  userId    String
+  league    String
   timestamp DateTime
 
-  @@id([userId, league, stashId])
+  favorited Boolean
+  name      String?
+
+  lpValue      Float?
+  lpStockValue Float?
+  fixedValue   Float?
+
+  @@id([userId, league, timestamp])
   @@index([userId])
 }
 
@@ -308,33 +319,6 @@ model StashViewAutomaticSnapshotSettings {
   nextSnapshotTimestamp           DateTime
 
   @@id([userId, league])
-}
-
-model StashViewItemSummary {
-  itemId String
-  userId String
-  league String
-
-  stashId String
-
-  x        Int
-  y        Int
-  quantity Int
-
-  searchableString String
-
-  itemGroupHashString String?
-  itemGroupTag        String?
-
-  icon String?
-
-  iconId   String?
-  category String[]
-
-  @@id([userId, stashId, x, y])
-  @@index([userId])
-  @@index([stashId])
-  @@index([league])
 }
 
 model TftLiveListing {
@@ -372,4 +356,25 @@ model LivePricingHistoryHourEntry {
   @@id([itemGroupHashString, league, type, minQuantityInclusive, timestamp])
   @@index([itemGroupHashString])
   @@index([timestamp])
+}
+
+model LivePricingHistoryDayEntry {
+  itemGroupHashString  String
+  league               String
+  type                 String
+  value                Float
+  minQuantityInclusive Int
+  timestamp            DateTime
+
+  @@id([itemGroupHashString, league, type, minQuantityInclusive, timestamp])
+  @@index([itemGroupHashString])
+  @@index([timestamp])
+}
+
+model LivePricingHistoryFixedLastEntry {
+  itemGroupHashString String
+  league              String
+  value               Float
+
+  @@id([itemGroupHashString, league])
 }

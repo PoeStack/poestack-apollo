@@ -39,10 +39,6 @@ export default class DiscordService {
   }
 
   public async start() {
-    if (process.env.DEV !== "true") {
-      this.ping("server started - " + process.env.SERVICE_NAME);
-    }
-
     if (process.env.START_DISCORD_STREAM === "true") {
       for (;;) {
         try {

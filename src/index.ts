@@ -32,16 +32,15 @@ import { PassiveTreeService } from "./services/passive-tree/passive-tree-service
 import CharacterSnapshotService from "./services/snapshot/character-snapshot-service";
 import { AtlasPassiveSnapshotResolve } from "./resolvers/atlas-passive-snapshot-resolver";
 import { CustomLadderGroupResolver } from "./resolvers/custom-ladder-group-resolver";
-import { RePoeService } from "./services/re-poe-service";
 import ItemGroupingService from "./services/pricing/item-grouping-service";
 import ItemValueHistoryStreamService from "./services/pricing/item-value-history-stream-service";
 import CharacterVectorService from "./services/snapshot/character-vector-service";
-import StashViewService from "./services/stash-view/stash-view-service";
 import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
 import { PoeStackResolver } from "./resolvers/poestack-resolver";
 import { LivePricingResolver } from "./resolvers/live-pricing-resolver";
 import LivePricingHistoryService from "./services/live-pricing/live-pricing-history-service";
+import StashViewSnapshotService from "./services/stash-view/stash-view-snapshot-service";
 
 dotenv.config({ path: ".env.local" });
 
@@ -161,10 +160,6 @@ process
 
   Logger.info("🚀 Server ready at http://0.0.0.0:4000/graphql");
 
-  //container.resolve(TftDiscordBotService).start();
-
-  container.resolve(RePoeService).load();
-
   container.resolve(ItemGroupingService).startWriteJob();
 
   if (process.env.CONSUME_STREAMS === "true") {
@@ -197,7 +192,7 @@ process
   }
 
   if (process.env.START_STASH_VIEW_AUTOMATIC_SNAPSHOTS === "true") {
-    container.resolve(StashViewService).startAutomaticSnapshotJob();
+    container.resolve(StashViewSnapshotService).startAutomaticSnapshotJob();
   }
 
   if (process.env.START_ONE_CLICK_JOB === "true") {

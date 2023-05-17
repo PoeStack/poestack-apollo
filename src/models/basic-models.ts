@@ -1,4 +1,3 @@
-import { PoeApiStashTab } from "@gql/resolvers-types";
 import { GraphQLBigInt, GraphQLJSON, GraphQLJSONObject } from "graphql-scalars";
 import { Field, InputType, Int, ObjectType } from "type-graphql";
 
@@ -1387,15 +1386,45 @@ export class GqlLivePricingSimpleConfig {
   listingPercent?: number;
 }
 
-@ObjectType("LivePricingSummaryEntry")
-export class GqlLivePricingSummaryEntry {
+@InputType("StashViewSnapshotRecordUpdateInput")
+export class GqlStashViewSnapshotRecordUpdateInput {
   @Field()
-  itemGroupKey: string;
+  league: string;
   @Field()
-  itemGroupHashString: string;
+  timestamp: Date;
 
   @Field()
-  icon: string;
+  favorited: boolean;
+  @Field({ nullable: true })
+  name?: string;
+}
+
+@ObjectType("StashViewSnapshotRecord")
+export class GqlStashViewSnapshotRecord {
+  @Field()
+  userId: string;
+  @Field()
+  league: string;
+  @Field()
+  timestamp: Date;
+
+  @Field()
+  favorited: boolean;
+  @Field({ nullable: true })
+  name?: string;
+
+  @Field({ nullable: true })
+  fixedValue?: number;
+  @Field({ nullable: true })
+  lpValue?: number;
+  @Field({ nullable: true })
+  lpStockValue?: number;
+}
+
+@ObjectType("LivePricingSummaryEntry")
+export class GqlLivePricingSummaryEntry {
+  @Field(() => GqlItemGroup)
+  itemGroup: GqlItemGroup;
 
   @Field(() => GqlLivePricingValuation, { nullable: true })
   valuation?: GqlLivePricingValuation;
@@ -1409,10 +1438,17 @@ export class GqlLivePricingSummary {
   entries: GqlLivePricingSummaryEntry[];
 }
 
-@InputType("LivePricingKeySummaryConfig")
-export class GqlLivePricingSummaryConfig {
+@InputType("LivePricingSummarySearch")
+export class GqlLivePricingSummarySearch {
   @Field()
   league: string;
-  @Field(() => [String])
-  itemGroupHashStrings: string[];
+
+  @Field({ nullable: true })
+  tag?: string;
+
+  @Field({ nullable: true })
+  searchString?: string;
+
+  @Field({ nullable: true })
+  offSet?: number;
 }

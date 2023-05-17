@@ -5,10 +5,8 @@ import StopWatch from "../utils/stop-watch";
 import DiscordService from "../discord-service";
 import PostgresService from "../mongo/postgres-service";
 import { singleton } from "tsyringe";
-import { type GqlItemGroup } from "../../models/basic-models";
 import { Logger } from "../logger";
 import GithubService from "../github-service";
-import { Prisma } from "@prisma/client";
 
 export type ActiveItemGroup = {
   league: string;

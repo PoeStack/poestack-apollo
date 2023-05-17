@@ -16,7 +16,7 @@ export default class PoeNinjaAuditService {
       "https://poe.ninja/api/data/itemoverview?league=Crucible&type=Scarab&language=en"
     );
     const body = await resp.json();
-    let out = ['name,poeninja,poestack'];
+    const out = ["name,poeninja,poestack"];
     const pValueTarget = "p10";
     for (const line of body.lines) {
       const pValue =
@@ -26,9 +26,7 @@ export default class PoeNinjaAuditService {
           pValueTarget
         );
 
-      out.push(
-        `${line.name}, ${line.chaosValue}, ${pValue}`
-      );
+      out.push(`${line.name}, ${line.chaosValue}, ${pValue}`);
     }
 
     fs.writeFileSync(`${pValueTarget} poeninja audit.txt`, out.join("\n"));
