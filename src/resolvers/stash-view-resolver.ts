@@ -81,7 +81,11 @@ export class StashViewResolver {
           SNAPSHOT_FAVORITE_LIMITS_BY_PATREON_TIER[user.patreonTier] ?? 1;
         const favoritedSnapshotCount =
           await this.postgresService.prisma.stashViewSnapshotRecord.count({
-            where: { userId: ctx.userId, league: input.league },
+            where: {
+              userId: ctx.userId,
+              league: input.league,
+              favorited: true,
+            },
           });
 
         if (favoritedSnapshotCount + 1 > favoriteLimit) {
