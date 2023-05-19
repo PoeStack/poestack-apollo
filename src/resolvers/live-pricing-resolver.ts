@@ -2,6 +2,10 @@ import { Arg, Ctx, Query, Resolver } from "type-graphql";
 import LivePricingService from "../services/live-pricing/live-pricing-service";
 import { singleton } from "tsyringe";
 import {
+  GqlLivePricingHistoryConfig,
+  GqlLivePricingHistoryGroup,
+  GqlLivePricingHistoryResult,
+  GqlLivePricingHistorySeries,
   GqlLivePricingSimpleConfig,
   GqlLivePricingSimpleResult,
   GqlLivePricingSummary,
@@ -11,6 +15,7 @@ import {
 import { PoeStackContext } from "../index";
 import PostgresService from "../services/mongo/postgres-service";
 import { GqlItemGroup } from "../models/basic-models";
+import _ from "lodash";
 
 @Resolver()
 @singleton()
@@ -58,6 +63,61 @@ export class LivePricingResolver {
     }
 
     return out;
+  }
+
+  @Query(() => GqlLivePricingHistoryResult)
+  public async livePricingHistory(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("config") config: GqlLivePricingHistoryConfig
+  ): Promise<GqlLivePricingHistoryResult> {
+    const resultWrapper: GqlLivePricingHistoryResult = {
+      results: [],
+    };
+
+    const itemGroups = await this.postgresService.prisma.itemGroupInfo.findMany(
+      { where: { hashString: { in: config.itemGroupHashStrings } } }
+    );
+
+    const allEntries =
+      await this.postgresService.prisma.livePricingHistoryDayEntry.findMany({
+        where: {
+          itemGroupHashString: { in: config.itemGroupHashStrings },
+          minQuantityInclusive: { in: config.minQuantities },
+          league: config.league,
+          type: { in: config.types },
+        },
+        orderBy: { timestamp: "asc" },
+      });
+
+    const entriesByItemgroupHash = _.groupBy(
+      allEntries,
+      (e) => e.itemGroupHashString
+    );
+    for (const itemGroup of itemGroups) {
+      const resultGroup: GqlLivePricingHistoryGroup = {
+        itemGroup: itemGroup as unknown as GqlItemGroup,
+        series: [],
+      };
+      resultWrapper.results.push(resultGroup);
+
+      const entriesByTypeAndQuantity = _.groupBy(
+        entriesByItemgroupHash[itemGroup.hashString],
+        (e) => `${e.type}__${e.minQuantityInclusive}`
+      );
+
+      for (const type of config.types) {
+        for (const minQuantity of config.minQuantities) {
+          const series: GqlLivePricingHistorySeries = {
+            type: type,
+            stockRangeStartInclusive: minQuantity,
+            entries: entriesByTypeAndQuantity[`${type}__${minQuantity}`] ?? [],
+          };
+          resultGroup.series.push(series);
+        }
+      }
+    }
+
+    return resultWrapper;
   }
 
   @Query(() => GqlLivePricingSimpleResult)

@@ -6,9 +6,7 @@ import {
   GqlCharacterSnapshot,
   GqlCharacterSnapshotRecord,
   GqlCharacterSnapshotSearch,
-  GqlCharacterSnapshotSearchAggregationsResponse,
   GqlCharacterSnapshotSearchResponse,
-  GqlCharacterSnapshotUniqueAggregationKeysResponse,
   GqlPoeCharacter,
 } from "../models/basic-models";
 import { GraphQLBoolean } from "graphql";

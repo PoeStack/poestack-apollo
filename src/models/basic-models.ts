@@ -944,48 +944,6 @@ export class GqlCharacterSnapshotSearchResponse {
   hasMore: boolean;
 }
 
-@ObjectType("CharacterSnapshotSearchAggregationsResponse")
-export class GqlCharacterSnapshotSearchAggregationsResponse {
-  @Field(() => GqlGenericAggregation, { nullable: true })
-  characterClassAggregation?: GqlGenericAggregation;
-
-  @Field(() => GqlGenericAggregation, { nullable: true })
-  characterClassTimeseriesAggregation?: GqlGenericAggregation;
-
-  @Field(() => GqlGenericAggregation, { nullable: true })
-  mainSkillTimeseriesAggregation?: GqlGenericAggregation;
-
-  @Field(() => GqlGenericAggregation, { nullable: true })
-  levelTimeseriesAggregation?: GqlGenericAggregation;
-
-  @Field(() => GqlGenericAggregation, { nullable: true })
-  keystoneAggregation?: GqlGenericAggregation;
-
-  @Field(() => GqlGenericAggregation, { nullable: true })
-  mainSkillAggreagtion?: GqlGenericAggregation;
-
-  @Field(() => GqlGenericAggregation, { nullable: true })
-  itemKeyAggreagtion?: GqlGenericAggregation;
-
-  @Field({ nullable: true })
-  totalMatches?: number;
-}
-
-@ObjectType("CharacterSnapshotUniqueAggregationKeysResponse")
-export class GqlCharacterSnapshotUniqueAggregationKeysResponse {
-  @Field(() => [String])
-  characterClassKeys?: string[];
-
-  @Field(() => [String])
-  keystoneKeys?: string[];
-
-  @Field(() => [String])
-  mainSkillKeys?: string[];
-
-  @Field(() => [String])
-  itemKeys?: string[];
-}
-
 @ObjectType("CustomLadderMember")
 @InputType("CustomLadderMemberInput")
 export class GqlCustomLadderGroupMember {
@@ -1374,6 +1332,18 @@ export class GqlLivePricingSimpleResult {
   stockValuation: GqlLivePricingValuation;
 }
 
+@InputType("LivePricingHistoryConfig")
+export class GqlLivePricingHistoryConfig {
+  @Field()
+  league: string;
+  @Field(() => [String])
+  itemGroupHashStrings: string[];
+  @Field(() => [Number])
+  minQuantities: number[];
+  @Field(() => [String])
+  types: string[];
+}
+
 @InputType("LivePricingSimpleConfig")
 export class GqlLivePricingSimpleConfig {
   @Field()
@@ -1451,4 +1421,40 @@ export class GqlLivePricingSummarySearch {
 
   @Field({ nullable: true })
   offSet?: number;
+}
+
+@ObjectType("LivePricingHistoryEntry")
+export class GqlLivePricingHistoryEntry {
+  @Field()
+  timestamp: Date;
+
+  @Field()
+  value: number;
+}
+
+@ObjectType("LivePricingHistorySeries")
+export class GqlLivePricingHistorySeries {
+  @Field()
+  type: string;
+
+  @Field()
+  stockRangeStartInclusive: number;
+
+  @Field(() => [GqlLivePricingHistoryEntry])
+  entries: GqlLivePricingHistoryEntry[];
+}
+
+@ObjectType("LivePricingHistoryGroup")
+export class GqlLivePricingHistoryGroup {
+  @Field(() => GqlItemGroup)
+  itemGroup: GqlItemGroup;
+
+  @Field(() => [GqlLivePricingHistorySeries])
+  series: GqlLivePricingHistorySeries[];
+}
+
+@ObjectType("LivePricingHistoryResult")
+export class GqlLivePricingHistoryResult {
+  @Field(() => [GqlLivePricingHistoryGroup])
+  results: GqlLivePricingHistoryGroup[];
 }
