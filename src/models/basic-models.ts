@@ -1368,10 +1368,10 @@ export class GqlLivePricingSimpleResult {
   @Field()
   allListingsLength: number;
 
-  @Field(() => GqlLivePricingValuation)
-  valuation: GqlLivePricingValuation;
-  @Field(() => GqlLivePricingValuation)
-  stockValuation: GqlLivePricingValuation;
+  @Field(() => GqlLivePricingValuation, { nullable: true })
+  valuation?: GqlLivePricingValuation;
+  @Field(() => GqlLivePricingValuation, { nullable: true })
+  stockValuation?: GqlLivePricingValuation;
 }
 
 @InputType("LivePricingSimpleConfig")

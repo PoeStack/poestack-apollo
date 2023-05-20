@@ -11,6 +11,7 @@ import {
 import { PoeStackContext } from "../index";
 import PostgresService from "../services/mongo/postgres-service";
 import { GqlItemGroup } from "../models/basic-models";
+import { Prisma } from "@prisma/client";
 
 @Resolver()
 @singleton()
@@ -25,11 +26,24 @@ export class LivePricingResolver {
     @Ctx() ctx: PoeStackContext,
     @Arg("search") search: GqlLivePricingSummarySearch
   ) {
+    const searchConditions: Prisma.Sql[] = [
+      Prisma.sql`f."league" = ${search.league} and f."value" is not null`,
+    ];
+
+    if (search.tag) {
+      searchConditions.push(Prisma.sql`i."tag" = ${search.tag}`);
+    }
+    if (search.searchString) {
+      searchConditions.push(
+        Prisma.sql`i."key" ilike ${`%${search.searchString}%`}`
+      );
+    }
+
     const itemGroups: GqlItemGroup[] = await this.postgresService.prisma
       .$queryRaw`
       select * from "ItemGroupInfo" i 
       left join "LivePricingHistoryFixedLastEntry" f on i."hashString" = f."itemGroupHashString"
-      where f."league" = ${search.league} and i."tag" = ${search.tag} and f."value" is not null
+      ${Prisma.sql`where ${Prisma.join(searchConditions, " and ")}`}
       order by f."value" desc
       offset ${search.offSet} limit 40`;
 
@@ -74,7 +88,7 @@ export class LivePricingResolver {
           quantity: config.quantity,
         },
       ],
-    })!;
+    });
 
     const simpleResult: GqlLivePricingSimpleResult = {
       allListingsLength: result.allListingsLength,
@@ -84,10 +98,15 @@ export class LivePricingResolver {
       ),
     };
 
-    simpleResult.valuation.validListings =
-      simpleResult.valuation.validListings.slice(0, 10);
-    simpleResult.stockValuation.validListings =
-      simpleResult.stockValuation.validListings.slice(0, 10);
+    if (simpleResult.valuation) {
+      simpleResult.valuation.validListings =
+        simpleResult.valuation.validListings.slice(0, 10);
+    }
+
+    if (simpleResult.stockValuation) {
+      simpleResult.stockValuation.validListings =
+        simpleResult.stockValuation.validListings.slice(0, 10);
+    }
 
     return simpleResult;
   }
