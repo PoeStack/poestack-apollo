@@ -89,8 +89,12 @@ export default class LivePricingHistoryService {
             itemGroupHashString: fixedEntry.itemGroupHashString,
             league: fixedEntry.league,
             value: fixedEntry.value,
+            totalListings: results.allListingsLength ?? 0,
           },
-          update: { value: fixedEntry.value },
+          update: {
+            value: fixedEntry.value,
+            totalListings: results.allListingsLength ?? 0,
+          },
         }
       );
     }

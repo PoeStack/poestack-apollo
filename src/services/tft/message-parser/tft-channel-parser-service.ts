@@ -108,6 +108,9 @@ export class TftChannelParserService {
         update: {
           properties: listing.properties,
           updatedAtTimestamp: listing.updatedAtTimestamp,
+          userDiscordDisplayRole: listing?.userDiscordDisplayRole,
+          userDiscordDisplayRoleColor: listing?.userDiscordDisplayRoleColor,
+          userDiscordHighestRole: listing?.userDiscordHighestRole,
           delistedAtTimestamp: null,
           messageId: messageId,
         },

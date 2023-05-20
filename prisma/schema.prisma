@@ -375,6 +375,7 @@ model LivePricingHistoryFixedLastEntry {
   itemGroupHashString String
   league              String
   value               Float
+  totalListings       Int    @default(0)
 
   @@id([itemGroupHashString, league])
 }
