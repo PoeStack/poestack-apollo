@@ -356,7 +356,11 @@ export default class StashViewSnapshotService {
     while (nonfavoritedSnapshotCount > userSnapshotLimit) {
       const oldestNonfavoritedSnapshot =
         await this.postgresService.prisma.stashViewSnapshotRecord.findFirst({
-          where: { userId: config.userId, league: config.league },
+          where: {
+            userId: config.userId,
+            league: config.league,
+            favorited: false,
+          },
           orderBy: { timestamp: "asc" },
         });
       await this.deleteSnapshot({
