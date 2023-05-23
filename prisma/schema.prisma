@@ -88,6 +88,13 @@ model PoeLiveListing {
   @@index([listedAtTimestamp])
 }
 
+model PoeLiveProfileActivityRecord {
+  poeProfileName      String
+  lastActiveTimestamp DateTime
+
+  @@id([poeProfileName])
+}
+
 model UserProfile {
   userId                 String   @id
   opaqueKey              String   @unique

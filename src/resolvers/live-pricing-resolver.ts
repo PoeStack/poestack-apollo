@@ -32,7 +32,7 @@ export class LivePricingResolver {
     @Arg("search") search: GqlLivePricingSummarySearch
   ) {
     const searchConditions: Prisma.Sql[] = [
-      Prisma.sql`f."league" = ${search.league} and f."value" is not null`,
+      Prisma.sql`f."league" = ${search.league} and f."value" is not null and f."totalListings" >= 7`,
     ];
 
     if (search.tag) {
@@ -62,7 +62,7 @@ export class LivePricingResolver {
           league: search.league,
           valuationConfigs: [
             { listingPercent: 10, quantity: 1 },
-            { listingPercent: 10, quantity: 20 },
+            { listingPercent: 10, quantity: search.quantityMin ?? 20 },
           ],
         }
       );

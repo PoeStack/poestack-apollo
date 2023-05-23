@@ -14,6 +14,7 @@ import { PoeLiveListing } from "@prisma/client";
 @singleton()
 export default class PublicStashStreamService {
   updateQueue: PoeApiPublicStashResponse[] = [];
+  poeProfileActivityRecord: Record<string, Date> = {};
 
   constructor(
     private readonly poeApi: PoeApi,
@@ -42,6 +43,7 @@ export default class PublicStashStreamService {
     const stashUpdates = [...response.stashes];
     while (stashUpdates.length > 0) {
       const publicStashUpdate = stashUpdates.shift();
+      this.poeProfileActivityRecord[publicStashUpdate.accountName] = new Date();
 
       const listingsMap: Record<string, PoeLiveListing> = {};
       for (const item of publicStashUpdate.items) {
@@ -89,6 +91,30 @@ export default class PublicStashStreamService {
     await this.executeListingUpdates(listingsToWrite);
   }
 
+  public async writePoeProfileActivity() {
+    const records = this.poeProfileActivityRecord;
+    if (Object.values(records).length > 50) {
+      this.poeProfileActivityRecord = {};
+
+      const promises = Object.entries(records).map(
+        async ([poeProfileName, timestamp]) => {
+          await this.postgresService.prisma.poeLiveProfileActivityRecord.upsert(
+            {
+              where: { poeProfileName: poeProfileName },
+              create: {
+                poeProfileName: poeProfileName,
+                lastActiveTimestamp: timestamp,
+              },
+              update: { lastActiveTimestamp: timestamp },
+            }
+          );
+        }
+      );
+
+      await Promise.all(promises);
+    }
+  }
+
   public async startWritingPublicStashUpdates() {
     for (;;) {
       try {
@@ -96,6 +122,12 @@ export default class PublicStashStreamService {
           const toWrite = this.updateQueue.shift();
 
           await this.writePoeLiveListings(toWrite);
+
+          try {
+            await this.writePoeProfileActivity();
+          } catch (error) {
+            Logger.error("error in write poe profile activity", error);
+          }
 
           await this.postgresService.prisma.genericParam.upsert({
             where: { key: "last_tracked_public_stash_change_id" },

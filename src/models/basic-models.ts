@@ -1421,6 +1421,9 @@ export class GqlLivePricingSummarySearch {
 
   @Field({ nullable: true })
   offSet?: number;
+
+  @Field({ nullable: true })
+  quantityMin?: number;
 }
 
 @ObjectType("LivePricingHistoryEntry")

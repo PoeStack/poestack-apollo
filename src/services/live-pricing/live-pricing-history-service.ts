@@ -100,9 +100,8 @@ export default class LivePricingHistoryService {
     }
 
     if (config.updateDailyHistory) {
-      const dailyyTimestamp = new Date(
-        updatedAtEpochMs - (updatedAtEpochMs % (3600000 * 24))
-      );
+      const dailyyTimestamp = new Date(updatedAtEpochMs);
+      dailyyTimestamp.setHours(0, 0, 0, 0);
 
       for (const entry of hourlyEntires) {
         await this.postgresService.prisma.livePricingHistoryDayEntry.upsert({
