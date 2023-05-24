@@ -1142,8 +1142,6 @@ export class GqlStashViewSettings {
 
   @Field({ nullable: true })
   searchString: string;
-  @Field()
-  filterCheckedTabs: boolean;
 
   @Field({ nullable: true })
   selectedTabId?: string;

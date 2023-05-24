@@ -108,10 +108,8 @@ export class StashViewUtil {
       },
     ];
 
-    const prefilter = [...summary.items].filter(
-      (e) =>
-        !settings.filterCheckedTabs ||
-        settings.checkedTabIds.includes(e.stashId)
+    const prefilter = [...summary.items].filter((e) =>
+      settings.checkedTabIds.includes(e.stashId)
     );
 
     const result = (

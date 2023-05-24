@@ -74,18 +74,21 @@ export default class CharacterSnapshotService {
 
     if (allPoeCharacters) {
       for (const character of allPoeCharacters) {
-        const m = {
-          id: character.id,
-          name: character.name,
-          userId,
-          createdAtTimestamp: new Date(),
-          lastSnapshotTimestamp: undefined,
-          lastLeague: character.league,
-        };
         await this.postgresService.prisma.poeCharacter.upsert({
           where: { id: character.id },
-          create: m,
-          update: m,
+          create: {
+            id: character.id,
+            name: character.name,
+            opaqueKey: nanoid(),
+            userId: userId,
+            createdAtTimestamp: new Date(),
+            lastSnapshotTimestamp: undefined,
+            lastLeague: character.league,
+          },
+          update: {
+            name: character.name,
+            lastLeague: character.league,
+          },
         });
       }
     }
@@ -117,6 +120,17 @@ export default class CharacterSnapshotService {
 
   public async startCharacterSnapshotBackgroundJob() {
     const take = 500;
+
+    const c = await this.postgresService.prisma.poeCharacter.findMany({
+      where: { opaqueKey: null },
+      select: { id: true },
+    });
+    for (const ch of c) {
+      await this.postgresService.prisma.poeCharacter.update({
+        where: { id: ch.id },
+        data: { opaqueKey: nanoid() },
+      });
+    }
 
     for (;;) {
       try {

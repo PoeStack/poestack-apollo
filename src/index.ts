@@ -41,6 +41,7 @@ import { PoeStackResolver } from "./resolvers/poestack-resolver";
 import { LivePricingResolver } from "./resolvers/live-pricing-resolver";
 import LivePricingHistoryService from "./services/live-pricing/live-pricing-history-service";
 import StashViewSnapshotService from "./services/stash-view/stash-view-snapshot-service";
+import { LadderViewSnapshotService } from "./services/ladder-view/ladder-view-snapshot-service";
 
 dotenv.config({ path: ".env.local" });
 
@@ -204,6 +205,13 @@ process
   if (process.env.START_TFT_PARSER === "true") {
     container.resolve(TftChannelParserService).start();
   }
+
+  await container
+    .resolve(LadderViewSnapshotService)
+    .takeSnapshot(
+      "d3d595b6-6982-48f9-9358-048292beb8a7",
+      "4deeb3a13e4475ed9b78b566d18e550e593f040e8805bc4581bbd3a71fa29b9d"
+    );
 
   //await container.resolve(StashViewService).test();
 

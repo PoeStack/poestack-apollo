@@ -156,15 +156,25 @@ model GenericParam {
 }
 
 model PoeCharacter {
-  id                              String      @id
-  userId                          String
-  createdAtTimestamp              DateTime    @default(now())
+  id                 String   @id
+  opaqueKey          String?
+  userId             String
+  createdAtTimestamp DateTime @default(now())
+  name               String
+
+  lastLeague               String?
+  lastLevel                Int       @default(0)
+  lastLevelChangeTimestamp DateTime?
+
+  ladderViewNextSnapshotTimestamp DateTime?
+
   lastSnapshotTimestamp           DateTime?
-  name                            String
-  lastLeague                      String?
   lastSnapshotHash                String?
   lastSnapshotHashUpdateTimestamp DateTime?
-  UserProfile                     UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  UserProfile UserProfile @relation(fields: [userId], references: [userId], onDelete: Cascade)
+
+  @@index([opaqueKey])
 }
 
 model CharacterSnapshotRecord {
@@ -385,4 +395,34 @@ model LivePricingHistoryFixedLastEntry {
   totalListings       Int    @default(0)
 
   @@id([itemGroupHashString, league])
+}
+
+model LadderViewSnapshotRecord {
+  userId      String
+  characterId String
+  timestamp   DateTime
+
+  snapshotHashString String
+
+  lastestSnapshot Boolean
+
+  pobStatus   String
+  pobShardKey Int
+
+  @@id([userId, characterId, timestamp])
+  @@index([userId])
+  @@index([characterId])
+}
+
+model LadderViewSnapshotVectorSummary {
+  userId      String
+  characterId String
+  timestamp   DateTime
+
+  characterApiFields Json
+  characterPobFields Json
+
+  @@id([userId, characterId])
+  @@index([userId])
+  @@index([characterId])
 }
