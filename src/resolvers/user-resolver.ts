@@ -3,7 +3,7 @@ import { singleton } from "tsyringe";
 import { Arg, Ctx, Query, Resolver, Mutation } from "type-graphql";
 import PoeApi from "../services/poe/poe-api";
 import PostgresService from "../services/mongo/postgres-service";
-import { GqlUserProfile } from "../models/basic-models";
+import { GqlUserProfile, GqlUserNotification } from "../models/basic-models";
 import { PoeStackContext } from "..";
 import DiscordService from "../services/discord-service";
 import { Logger } from "../services/logger";
@@ -115,6 +115,17 @@ export class UserResolver {
         poeProfileName: { equals: poeProfileName, mode: "insensitive" },
       },
       select: { userId: true, poeProfileName: true },
+    });
+    return resp;
+  }
+
+  @Query(() => [GqlUserNotification])
+  public async myNotifications(@Ctx() ctx: PoeStackContext) {
+    const resp = await this.postgresService.prisma.userNotification.findMany({
+      where: {
+        userId: { in: [null, ctx.userId] },
+        timestamp: { gt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14) },
+      },
     });
     return resp;
   }

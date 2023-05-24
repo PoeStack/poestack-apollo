@@ -1433,6 +1433,24 @@ export class GqlLivePricingHistoryEntry {
   value: number;
 }
 
+@ObjectType("UserNotification")
+export class GqlUserNotification {
+  @Field()
+  id: number;
+
+  @Field()
+  timestamp: Date;
+
+  @Field({ nullable: true })
+  userId?: string;
+  @Field()
+  type: string;
+  @Field({ nullable: true })
+  title: string;
+  @Field({ nullable: true })
+  body: string;
+}
+
 @ObjectType("LivePricingHistorySeries")
 export class GqlLivePricingHistorySeries {
   @Field()

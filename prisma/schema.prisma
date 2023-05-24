@@ -397,6 +397,17 @@ model LivePricingHistoryFixedLastEntry {
   @@id([itemGroupHashString, league])
 }
 
+model UserNotification {
+  id        Int      @id @default(autoincrement())
+  timestamp DateTime @default(now())
+
+  userId String?
+
+  type  String
+  title String?
+  body  String?
+}
+
 model LadderViewSnapshotRecord {
   userId      String
   characterId String
