@@ -1449,6 +1449,8 @@ export class GqlUserNotification {
   title: string;
   @Field({ nullable: true })
   body: string;
+  @Field({ nullable: true })
+  href: string;
 }
 
 @ObjectType("LivePricingHistorySeries")

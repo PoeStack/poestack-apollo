@@ -406,6 +406,7 @@ model UserNotification {
   type  String
   title String?
   body  String?
+  href  String?
 }
 
 model LadderViewSnapshotRecord {

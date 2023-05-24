@@ -123,7 +123,7 @@ export class UserResolver {
   public async myNotifications(@Ctx() ctx: PoeStackContext) {
     const resp = await this.postgresService.prisma.userNotification.findMany({
       where: {
-        userId: { in: [null, ctx.userId] },
+        OR: [{ userId: null }, { userId: ctx.userId }],
         timestamp: { gt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14) },
       },
     });
