@@ -1156,7 +1156,7 @@ export class GqlStashViewSettings {
   itemGroupValueOverrides: Record<string, number>;
 
   @Field({ nullable: true })
-  selectedExporter?: string;
+  selectedView?: string;
   @Field()
   exporterListedValueMultipler: number;
 
@@ -1176,6 +1176,11 @@ export class GqlStashViewSettings {
   tftSelectedCategory?: string;
   @Field({ nullable: true })
   tftSelectedSubCategory?: string;
+
+  @Field({ nullable: true })
+  selectedValuationType?: string;
+  @Field({ nullable: true })
+  selectedValuationLP?: number;
 }
 
 @ObjectType("OneClickMessageHistory")
@@ -1414,11 +1419,17 @@ export class GqlLivePricingSummarySearch {
   @Field({ nullable: true })
   tag?: string;
 
+  @Field(() => [String], { nullable: true })
+  itemGroupHashStrings?: string[];
+
   @Field({ nullable: true })
   searchString?: string;
 
   @Field({ nullable: true })
   offSet?: number;
+
+  @Field({ nullable: true })
+  limit?: number;
 
   @Field({ nullable: true })
   quantityMin?: number;

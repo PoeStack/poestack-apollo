@@ -32,7 +32,7 @@ export default class StashViewService {
     opaqueKey: string,
     input: GqlStashViewSettings
   ): Promise<string> {
-    input.selectedExporter = "TFT-Bulk";
+    input.selectedView = "TFT-Bulk";
     const tftCategory = STASH_VIEW_TFT_CATEGORIES[input.tftSelectedCategory];
     input.checkedTags = tftCategory!.tags;
 

@@ -41,7 +41,14 @@ export class StashViewUtil {
     settings: GqlStashViewSettings,
     item: GqlStashViewItemSummary
   ): number {
-    let value = item.valueChaos ?? 0;
+    let value = 0;
+    if (settings.selectedView === "TFT-Bulk") {
+      value = item["fixedValue"];
+    } else if (settings.selectedValuationType === "stock") {
+      value = Math.max(item["lpStockValue"] ?? 0, item["lpValue"] ?? 0);
+    } else {
+      value = item["lpValue"] ?? 0;
+    }
 
     if (settings.valueOverridesEnabled) {
       const overrideValue =
@@ -51,7 +58,7 @@ export class StashViewUtil {
       }
     }
 
-    if (["TFT-Bulk", "Forum Shop"].includes(settings.selectedExporter)) {
+    if (["TFT-Bulk", "Forum Shop"].includes(settings.selectedView ?? "")) {
       value = value * ((settings.exporterListedValueMultipler ?? 100) / 100);
     }
 
@@ -90,7 +97,7 @@ export class StashViewUtil {
         !settings.excludedItemGroupIds.includes(e.itemGroupHashString),
       (e) => {
         if (
-          settings.selectedExporter === "TFT-Bulk" &&
+          settings.selectedView === "TFT-Bulk" &&
           settings.tftSelectedCategory
         ) {
           const category =

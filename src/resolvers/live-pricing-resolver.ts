@@ -38,6 +38,14 @@ export class LivePricingResolver {
     if (search.tag) {
       searchConditions.push(Prisma.sql`i."tag" = ${search.tag}`);
     }
+    if (search.itemGroupHashStrings) {
+      searchConditions.push(
+        Prisma.sql`i."hashString" in (${Prisma.join(
+          search.itemGroupHashStrings,
+          ","
+        )})`
+      );
+    }
     if (search.searchString) {
       searchConditions.push(
         Prisma.sql`i."key" ilike ${`%${search.searchString}%`}`
@@ -50,7 +58,7 @@ export class LivePricingResolver {
       left join "LivePricingHistoryFixedLastEntry" f on i."hashString" = f."itemGroupHashString"
       ${Prisma.sql`where ${Prisma.join(searchConditions, " and ")}`}
       order by f."value" desc
-      offset ${search.offSet} limit 40`;
+      offset ${search.offSet} limit ${Math.min(search.limit ?? 40, 100)}`;
 
     const out: GqlLivePricingSummary = { entries: [] };
     for (const itemGroup of itemGroups) {

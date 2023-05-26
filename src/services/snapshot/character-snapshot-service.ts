@@ -121,17 +121,6 @@ export default class CharacterSnapshotService {
   public async startCharacterSnapshotBackgroundJob() {
     const take = 500;
 
-    const c = await this.postgresService.prisma.poeCharacter.findMany({
-      where: { opaqueKey: null },
-      select: { id: true },
-    });
-    for (const ch of c) {
-      await this.postgresService.prisma.poeCharacter.update({
-        where: { id: ch.id },
-        data: { opaqueKey: nanoid() },
-      });
-    }
-
     for (;;) {
       try {
         const charactersNew: PoeCharacter[] = await this.postgresService.prisma
