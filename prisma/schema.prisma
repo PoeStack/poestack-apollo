@@ -116,7 +116,8 @@ model UserProfile {
   patreonTier               String?
   patreonUpdatedAtTimestamp DateTime?
 
-  roles String[] @default([])
+  roles       String[] @default([])
+  preferences Json     @default("{}")
 
   CustomLadderGroup                   CustomLadderGroup[]
   PoeCharacter                        PoeCharacter[]

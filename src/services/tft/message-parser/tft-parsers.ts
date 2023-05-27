@@ -109,13 +109,16 @@ export class TftParsers {
     );
 
     const regions = [];
-    ["na", "kr", "sg", "jp", "eu", "ru", "ch", "br", 'au', 'nz'].forEach((e) => {
-      if (lines[1].includes(e)) {
-        regions.push(e);
+    ["na", "kr", "sg", "jp", "eu", "ru", "ch", "br", "au", "nz"].forEach(
+      (e) => {
+        if (lines[1].includes(e)) {
+          regions.push(e);
+        }
       }
-    });
+    );
 
     const ign = lines[5]
+      .replaceAll("@ ", "@")
       .match(/@(\S*)/g)?.[0]
       ?.slice(1)
       .replaceAll("`", "");

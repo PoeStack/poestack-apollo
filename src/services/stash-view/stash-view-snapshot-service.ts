@@ -237,7 +237,7 @@ export default class StashViewSnapshotService {
       const trackedItems = ctx.stashViewSnapshotTracked.entriesByTab[tabId];
       await this.livePricingService.injectPrices(trackedItems, {
         league: ctx.config.league,
-        listingPercent: 10,
+        listingPercent: ctx.user?.preferences?.['listingPercent'] ?? 10,
       });
 
       const stashTotalValues = { fixedValue: 0, lpValue: 0, lpStockValue: 0 };

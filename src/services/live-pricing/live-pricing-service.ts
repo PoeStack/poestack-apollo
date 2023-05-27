@@ -165,9 +165,9 @@ export default class LivePricingService {
     minQuantity: number,
     listingPercents: number[]
   ): LivePricingValuation[] {
-    const effectiveMinQuantity = Math.max(
-      1,
-      Math.round(minQuantity - Math.max(3, minQuantity * 0.17))
+    const effectiveMinQuantity = Math.min(
+      Math.max(1, Math.round(minQuantity - Math.max(3, minQuantity * 0.17))),
+      25
     );
 
     //Target all listings within the last hour
@@ -186,6 +186,10 @@ export default class LivePricingService {
       if (effectiveMinQuantity <= listing.quantity) {
         validListings.push(listing);
       }
+    }
+
+    if (validListings.length < 5) {
+      return [];
     }
 
     //Sort by the value to make the target p value easy.

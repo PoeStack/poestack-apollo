@@ -250,8 +250,8 @@ export class StashViewExporters {
     const output = [];
     for (const item of mapped) {
       output.push(
-        `${item.quantity}x ${GeneralUtils.capitalize(
-          item.searchableString
+        `${item.quantity}x ${StashViewUtil.itemEntryToName(
+          item
         )} ${StashViewExporters.chaosToDivPlusChaos(
           stashSettings.chaosToDivRate,
           StashViewUtil.itemValue(stashSettings, item),

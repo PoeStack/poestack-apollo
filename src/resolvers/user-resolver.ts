@@ -145,6 +145,28 @@ export class UserResolver {
     return resp;
   }
 
+  @Mutation(() => Boolean)
+  public async updatePreferenceListingPercent(
+    @Ctx() ctx: PoeStackContext,
+    @Arg("listingPercent") listingPercent: number
+  ) {
+    const user = await this.postgresService.prisma.userProfile.findUnique({
+      where: { userId: ctx.userId },
+    });
+
+    await this.postgresService.prisma.userProfile.update({
+      where: { userId: ctx.userId },
+      data: {
+        preferences: {
+          ...(user.preferences as any),
+          listingPercent: listingPercent,
+        },
+      },
+    });
+
+    return true;
+  }
+
   @Mutation(() => String)
   public async loginAs(
     @Ctx() ctx: PoeStackContext,
@@ -200,6 +222,7 @@ export class UserResolver {
       patreonUserId: null,
       patreonTier: null,
       patreonUpdatedAtTimestamp: null,
+      preferences: {},
       roles: [],
     };
 

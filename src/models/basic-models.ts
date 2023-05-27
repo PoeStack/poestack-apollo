@@ -234,6 +234,9 @@ export class GqlUserProfile {
   @Field(() => [String])
   roles: string;
 
+  @Field(() => GraphQLJSON)
+  preferences: any;
+
   oAuthToken: string;
 }
 
@@ -1179,8 +1182,6 @@ export class GqlStashViewSettings {
 
   @Field({ nullable: true })
   selectedValuationType?: string;
-  @Field({ nullable: true })
-  selectedValuationLP?: number;
 }
 
 @ObjectType("OneClickMessageHistory")
