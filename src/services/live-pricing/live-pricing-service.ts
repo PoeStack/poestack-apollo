@@ -4,6 +4,7 @@ import LiveListingService from "./live-listing-service";
 import StopWatch from "../../services/utils/stop-watch";
 import { Logger } from "../../services/logger";
 import _ from "lodash";
+import PostgresService from "../../services/mongo/postgres-service";
 
 export class LivePricingInput {
   itemGroupHashString?: string | null | undefined;
@@ -38,7 +39,21 @@ export class LivePricingResult {
 
 @singleton()
 export default class LivePricingService {
-  constructor(private liveListingService: LiveListingService) {}
+  constructor(
+    private liveListingService: LiveListingService,
+    private postgresService: PostgresService
+  ) {}
+
+  public async livePriceSimpleByKey(league: string, itemGroupKey: string): Promise<LivePricingValuation> {
+    const itemGroup = await this.postgresService.prisma.itemGroupInfo.findFirst(
+      { where: { key: itemGroupKey }, select: { hashString: true } }
+    );
+    const result = await this.livePriceSimple(
+      { itemGroupHashString: itemGroup.hashString },
+      { league: league }
+    );
+    return result;
+  }
 
   public async injectPrices(
     inputs: LivePricingInput[],

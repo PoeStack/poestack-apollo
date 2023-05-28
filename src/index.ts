@@ -22,7 +22,6 @@ import { UserResolver } from "./resolvers/user-resolver";
 import { PoeResolver } from "./resolvers/poe-resolver";
 import { TftOneClickResolver } from "./resolvers/tft-one-click-resolver";
 import { ItemGroupResolver } from "./resolvers/item-group-resolver";
-import { ItemGroupValueTimeseriesResolver } from "./resolvers/item-group-value-timeseries-resolver";
 import { Logger } from "./services/logger";
 import { GlobalSearchResolver } from "./resolvers/global-search-resolver";
 import { CharacterSnapshotResolver } from "./resolvers/character-snapshot-resolver";
@@ -33,7 +32,6 @@ import CharacterSnapshotService from "./services/snapshot/character-snapshot-ser
 import { AtlasPassiveSnapshotResolve } from "./resolvers/atlas-passive-snapshot-resolver";
 import { CustomLadderGroupResolver } from "./resolvers/custom-ladder-group-resolver";
 import ItemGroupingService from "./services/pricing/item-grouping-service";
-import ItemValueHistoryStreamService from "./services/pricing/item-value-history-stream-service";
 import CharacterVectorService from "./services/snapshot/character-vector-service";
 import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
@@ -106,7 +104,6 @@ process
       PoeResolver,
       UserResolver,
       ItemGroupResolver,
-      ItemGroupValueTimeseriesResolver,
       GlobalSearchResolver,
       CharacterSnapshotResolver,
       PassiveTreeResolver,
@@ -168,10 +165,6 @@ process
     container
       .resolve(PublicStashStreamService)
       .startWritingPublicStashUpdates();
-  }
-
-  if (process.env.START_HISTORY_WRITES === "true") {
-    container.resolve(ItemValueHistoryStreamService).startHistoryInserts();
   }
 
   if (process.env.START_POB === "true") {

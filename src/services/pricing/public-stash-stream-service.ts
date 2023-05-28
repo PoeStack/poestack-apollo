@@ -2,7 +2,6 @@ import PoeApi from "../poe/poe-api";
 import { type PoeApiPublicStashResponse } from "@gql/resolvers-types";
 
 import ItemGroupingService from "./item-grouping-service";
-import ItemValueHistoryService from "./item-value-history-service";
 import StopWatch from "../utils/stop-watch";
 import PostgresService from "../mongo/postgres-service";
 import { singleton } from "tsyringe";
@@ -10,6 +9,7 @@ import DiscordService from "../discord-service";
 import { Logger } from "../logger";
 import _ from "lodash";
 import { PoeLiveListing } from "@prisma/client";
+import LivePricingService from "../../services/live-pricing/live-pricing-service";
 
 @singleton()
 export default class PublicStashStreamService {
@@ -19,9 +19,9 @@ export default class PublicStashStreamService {
   constructor(
     private readonly poeApi: PoeApi,
     private readonly itemGroupingService: ItemGroupingService,
-    private readonly itemValueHistoryService: ItemValueHistoryService,
     private readonly postgresService: PostgresService,
-    private readonly discordService: DiscordService
+    private readonly discordService: DiscordService,
+    private readonly livePricingService: LivePricingService
   ) {}
 
   private diffChangeIds(rawIdOne: string, rawIdTwo: string): number[] {
@@ -273,14 +273,13 @@ export default class PublicStashStreamService {
           return value;
         } else if (mappings[currenyType]) {
           const altCurrenyType = mappings[currenyType];
-          const altCurrencyValue =
-            await this.itemValueHistoryService.fetchFirstPValueByItemGroupHashKey(
-              league,
-              altCurrenyType
-            );
+          const altCurrencyValue = await this.livePricingService.livePriceSimpleByKey(
+            league,
+            altCurrenyType
+          );
 
-          if (altCurrencyValue) {
-            return value * altCurrencyValue;
+          if (altCurrencyValue?.value) {
+            return value * altCurrencyValue?.value;
           }
         }
       }

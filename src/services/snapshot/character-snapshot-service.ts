@@ -27,7 +27,6 @@ import {
 import { S3Service } from "../s3-service";
 import AtlasPassiveSnapshotService from "./atlas-passive-snapshot-service";
 import DiscordService from "../discord-service";
-import ItemValueHistoryService from "../pricing/item-value-history-service";
 
 @singleton()
 export default class CharacterSnapshotService {
@@ -41,8 +40,7 @@ export default class CharacterSnapshotService {
     private readonly pobService: PobService,
     private readonly s3Service: S3Service,
     private readonly atlasPassiveSnapshotService: AtlasPassiveSnapshotService,
-    private readonly discordService: DiscordService,
-    private readonly itemValueHistoryService: ItemValueHistoryService
+    private readonly discordService: DiscordService
   ) {}
 
   public async searchSnapshots(
@@ -310,11 +308,7 @@ export default class CharacterSnapshotService {
                   .slice(0, 5)
                   .map((e) => ({ name: e.name.toLowerCase(), icon: e.icon }));
 
-                const divChaosValue =
-                  await this.itemValueHistoryService.fetchFirstPValueByItemGroupHashKey(
-                    characterData.league,
-                    "divine orb"
-                  );
+                const divChaosValue = 0;
 
                 const searchableSummary: CharacterSnapshotSearchableSummary2 = {
                   snapshotId: snapshot.id,
@@ -452,10 +446,7 @@ export default class CharacterSnapshotService {
       };
 
       if (group) {
-        const valueChaos =
-          await this.itemValueHistoryService.fetchFirstPValueByItemGroupHashString(
-            group.hashString
-          );
+        const valueChaos = 0;
         if (valueChaos > 0) {
           resp.valueChaos = valueChaos;
         }

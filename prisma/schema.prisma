@@ -26,52 +26,6 @@ model ItemGroupInfo {
   @@index([tag])
 }
 
-model ItemGroupPValue {
-  hashString               String
-  league                   String   @default("NA")
-  type                     String
-  value                    Float
-  stockRangeStartInclusive Int
-  updatedAtTimestamp       DateTime
-  lookbackWindowUsedHours  Int      @default(48)
-
-  @@id([hashString, type, stockRangeStartInclusive, league])
-  @@index([hashString])
-  @@index([updatedAtTimestamp])
-  @@index([type])
-  @@index([stockRangeStartInclusive])
-}
-
-model ItemGroupPValueHourlyTimeseriesEntry {
-  hashString               String
-  league                   String   @default("NA")
-  type                     String
-  value                    Float
-  stockRangeStartInclusive Int
-  timestamp                DateTime
-
-  @@id([hashString, type, stockRangeStartInclusive, timestamp, league])
-  @@index([hashString])
-  @@index([timestamp])
-  @@index([type])
-  @@index([stockRangeStartInclusive])
-}
-
-model ItemGroupPValueDailyTimeseriesEntry {
-  hashString               String
-  league                   String   @default("NA")
-  type                     String
-  value                    Float
-  stockRangeStartInclusive Int
-  timestamp                DateTime
-
-  @@id([hashString, type, stockRangeStartInclusive, timestamp, league])
-  @@index([hashString])
-  @@index([timestamp])
-  @@index([type])
-  @@index([stockRangeStartInclusive])
-}
-
 model PoeLiveListing {
   publicStashId       String
   league              String
