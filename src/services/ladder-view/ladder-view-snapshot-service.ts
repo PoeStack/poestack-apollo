@@ -1,3 +1,4 @@
+import { PoeLeagueStartService } from "./../poe/poe-league-start-service";
 import { PoeApiCharacter } from "@gql/resolvers-types";
 import {
   PoeCharacter,
@@ -27,7 +28,8 @@ export class LadderViewSnapshotService {
     private readonly itemGroupingService: ItemGroupingService,
     private readonly passiveTreeService: PassiveTreeService,
     private readonly s3Service: S3Service,
-    private readonly livePricingService: LivePricingService
+    private readonly livePricingService: LivePricingService,
+    private readonly poeLeagueStartService: PoeLeagueStartService
   ) {}
 
   private async takeSnapshotInternal(userId: string, characterId: string) {
@@ -281,6 +283,7 @@ export class LadderViewSnapshotService {
     await this.postgresService.prisma.ladderViewSnapshotRecord.updateMany({
       where: { characterOpaqueKey: ctx.poeCharacter.opaqueKey },
       data: {
+        mostRecentSnapshot: false,
         characterApiFields: Prisma.JsonNull,
         characterPobFields: Prisma.JsonNull,
       },
@@ -290,7 +293,9 @@ export class LadderViewSnapshotService {
         userId: ctx.userProfile.userId,
         characterOpaqueKey: ctx.poeCharacter.opaqueKey,
         snapshotHashString: "NA",
+        league: ctx.poeApiCharacter.league,
         snapshotStatus: "init",
+        mostRecentSnapshot: true,
         characterApiFields: ctx.vectorFields as any,
         characterPobFields: Prisma.JsonNull,
         timestamp: ctx.timestamp,
@@ -352,6 +357,8 @@ export class LadderViewSnapshotService {
       //TODO character detleted.
       return null;
     }
+
+    await this.poeLeagueStartService.update(characterData.league);
 
     const ctx: LadderViewSnapshotContext = {
       timestamp: new Date(),

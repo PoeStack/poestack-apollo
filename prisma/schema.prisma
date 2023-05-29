@@ -355,15 +355,24 @@ model UserNotification {
   href  String?
 }
 
+model LadderViewVectorRecord {
+  league    String
+  timestamp DateTime
+
+  @@id([league, timestamp])
+}
+
 model LadderViewSnapshotRecord {
   userId             String
   characterOpaqueKey String
   timestamp          DateTime
+  league             String
 
   snapshotHashString String
 
   snapshotStatus String
 
+  mostRecentSnapshot Boolean
   characterApiFields Json
   characterPobFields Json
 
@@ -373,4 +382,11 @@ model LadderViewSnapshotRecord {
   @@id([userId, characterOpaqueKey, timestamp])
   @@index([userId])
   @@index([characterOpaqueKey])
+}
+
+model PoeLeagueStartRecord {
+  league    String
+  timestamp DateTime
+
+  @@id([league])
 }

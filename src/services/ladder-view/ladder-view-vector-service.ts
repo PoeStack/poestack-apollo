@@ -44,6 +44,8 @@ export class LadderViewVectorService {
       entry.twitchProfileName,
     ]);
 
+    //Don't put the chaos value in there it's too long, maybe split pages by rank instead of by level
+
     vector.push(["r", snapshot.characterOpaqueKey, apiFields.level, rank]);
 
     dataVector.output.vectors.push(vector);
@@ -56,7 +58,7 @@ export class LadderViewVectorService {
       left join "PoeCharacter" pc on pc."opaqueKey" = sr."characterOpaqueKey"
       left join "UserProfile" up on sr."userId" = up."userId" 
       left join "TwitchStreamerProfile" sp on sp."userId" = up."userId" 
-      where sr."characterApiFields" != 'null' and sr."characterPobFields" != 'null' and pc."lastLeague" = ${league}
+      where sr."characterApiFields" != 'null' and sr."characterPobFields" != 'null' and sr."league" = ${league}
       order by pc."lastLevel" desc, pc."lastSnapshotTimestamp" asc`;
 
     const chunks = _.chunk(validSnapshotsEntries, 1000);
@@ -80,6 +82,45 @@ export class LadderViewVectorService {
     }
 
     dataVector.invertRelations();
+
+    const timestamp = new Date();
+    const allEntries = dataVector.output.vectors;
+    const entriesChunks = _.chunk(allEntries, 25000);
+
+    const header = {
+      totalChunks: entriesChunks.length,
+      totalEntries: allEntries.length,
+      timestamp: timestamp.toISOString(),
+    };
+
+    await this.postgresService.prisma.ladderViewVectorRecord.create({
+      data: { league: league, timestamp: timestamp },
+    });
+    await this.s3Service.putJson(
+      "poe-stack-ladder-view",
+      `vectors/${league}/vectors/${timestamp.toISOString()}/header.json`,
+      header
+    );
+    await this.s3Service.putJson(
+      "poe-stack-ladder-view",
+      `vectors/${league}/vectors/${timestamp.toISOString()}/values.json`,
+      { types: dataVector.output.types, values: dataVector.output.values }
+    );
+
+    let index = 0;
+    for (const chunk of entriesChunks) {
+      await this.s3Service.putJson(
+        "poe-stack-ladder-view",
+        `vectors/${league}/vectors/${timestamp.toISOString()}/entries_${index++}.json`,
+        { entries: chunk }
+      );
+    }
+
+    await this.s3Service.putJson(
+      "poe-stack-ladder-view",
+      `vectors/${league}/current.json`,
+      header
+    );
     console.log(dataVector);
   }
 

@@ -193,12 +193,17 @@ process
 
   if (process.env.START_LADDER_VIEW_POB_PROCESSOR === "true") {
     container.resolve(LadderViewPobService).startJob();
+    await container
+      .resolve(LadderViewSnapshotService)
+      .takeSnapshot(
+        "dd5fcd9a-4ed5-48d0-9ba0-db963c012ee7",
+        "4761607db8d9abf37a828b17f4c265f67612ac6db5df26aaf24319340a9d49e2"
+      );
   }
 
   if (process.env.START_LADDER_VIEW_VECTOR_PROCESSOR === "true") {
     container.resolve(LadderViewVectorService).startJob();
   }
-
 
   if (process.env.START_ONE_CLICK_JOB === "true") {
     await container.resolve(TftBlacklistService).pullBlacklist();
@@ -209,13 +214,6 @@ process
   if (process.env.START_TFT_PARSER === "true") {
     container.resolve(TftChannelParserService).start();
   }
-
-  await container
-    .resolve(LadderViewSnapshotService)
-    .takeSnapshot(
-      "dd5fcd9a-4ed5-48d0-9ba0-db963c012ee7",
-      "4761607db8d9abf37a828b17f4c265f67612ac6db5df26aaf24319340a9d49e2"
-    );
 
   //await container.resolve(StashViewService).test();
 

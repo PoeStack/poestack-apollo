@@ -273,10 +273,11 @@ export default class PublicStashStreamService {
           return value;
         } else if (mappings[currenyType]) {
           const altCurrenyType = mappings[currenyType];
-          const altCurrencyValue = await this.livePricingService.livePriceSimpleByKey(
-            league,
-            altCurrenyType
-          );
+          const altCurrencyValue =
+            await this.livePricingService.livePriceSimpleByKey(
+              league,
+              altCurrenyType
+            );
 
           if (altCurrencyValue?.value) {
             return value * altCurrencyValue?.value;
