@@ -180,11 +180,13 @@ export class StashViewResolver {
 
     Object.entries(_.groupBy(snapshots, (e) => e.stashId)).forEach(
       ([stashId, series]) => {
-        mappedSeries.push({
-          stashId: stashId,
-          values: series.map((e) => e.lpStockValue),
-          timestamps: series.map((e) => e.timestamp),
-        });
+        if (stashId) {
+          mappedSeries.push({
+            stashId: stashId,
+            values: series.map((e) => e.lpStockValue),
+            timestamps: series.map((e) => e.timestamp),
+          });
+        }
       }
     );
 

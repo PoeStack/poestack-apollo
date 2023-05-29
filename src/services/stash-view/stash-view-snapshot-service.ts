@@ -237,7 +237,7 @@ export default class StashViewSnapshotService {
       const trackedItems = ctx.stashViewSnapshotTracked.entriesByTab[tabId];
       await this.livePricingService.injectPrices(trackedItems, {
         league: ctx.config.league,
-        listingPercent: ctx.user?.preferences?.['listingPercent'] ?? 10,
+        listingPercent: ctx.user?.preferences?.["listingPercent"] ?? 10,
       });
 
       const stashTotalValues = { fixedValue: 0, lpValue: 0, lpStockValue: 0 };
@@ -261,6 +261,7 @@ export default class StashViewSnapshotService {
           id: nanoid(),
           userId: ctx.config.userId,
           league: ctx.config.league,
+          type: "tab value",
           stashId: tabId,
           timestamp: ctx.timestamp,
           value: stashTotalValues.fixedValue,
@@ -270,6 +271,21 @@ export default class StashViewSnapshotService {
         },
       });
     }
+
+    await this.postgresService.prisma.stashViewValueSnapshot.create({
+      data: {
+        id: nanoid(),
+        userId: ctx.config.userId,
+        league: ctx.config.league,
+        type: "net value",
+        stashId: null,
+        timestamp: ctx.timestamp,
+        value: ctx.snapshotHeader.totalValues.fixedValue,
+        fixedValue: ctx.snapshotHeader.totalValues.fixedValue,
+        lpValue: ctx.snapshotHeader.totalValues.lpValue,
+        lpStockValue: ctx.snapshotHeader.totalValues.lpStockValue,
+      },
+    });
   }
 
   private async uploadSnapshotToS3(ctx: StashViewSnapshotContext) {

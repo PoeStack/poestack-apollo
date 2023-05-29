@@ -212,18 +212,6 @@ model CustomLadderGroup {
   @@id([id, ownerUserId])
 }
 
-model DiscordServiceMessageRecord {
-  messageId       String @id
-  guildId         String
-  channelId       String
-  senderDiscordId String
-
-  timestamp DateTime
-
-  type       String
-  properties Json
-}
-
 model OneClickMessageHistory {
   messageId        String   @id
   channelId        String
@@ -253,7 +241,9 @@ model StashViewValueSnapshot {
 
   userId  String
   league  String
-  stashId String
+
+  type String @default("tab value")
+  stashId String?
 
   timestamp DateTime
 

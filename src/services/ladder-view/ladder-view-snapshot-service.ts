@@ -34,27 +34,33 @@ export class LadderViewSnapshotService {
   }
 
   private async mapCharacterData(ctx: LadderViewSnapshotContext) {
+    ctx.vectorFields = {};
+
     await this.mapItems(ctx);
     this.detectLooted(ctx);
     this.mapSkills(ctx);
     this.mapPassives(ctx);
 
-    const vectorFields: LadderViewVectorFields = {
-      experience: ctx.poeApiCharacter.experience ?? 0,
-      mainSkillKeys: ctx.mainSkillKeys,
-    };
-    ctx.vectorFields = vectorFields;
+    ctx.vectorFields.name = ctx.poeApiCharacter.name ?? "NA";
+    ctx.vectorFields.experience = ctx.poeApiCharacter.experience ?? 0;
+    ctx.vectorFields.level = ctx.poeApiCharacter.level ?? 0;
+
+    ctx.vectorFields.bandit = ctx.poeApiCharacter.passives?.bandit_choice;
+    ctx.vectorFields.pantheonMajor =
+      ctx.poeApiCharacter.passives?.pantheon_major;
+    ctx.vectorFields.pantheonMinor =
+      ctx.poeApiCharacter.passives?.pantheon_minor;
   }
 
   private mapPassives(ctx: LadderViewSnapshotContext) {
-    ctx.keyStoneKeys = [];
-    ctx.masteryKeys = [];
+    ctx.vectorFields.keyStoneKeys = [];
+    ctx.vectorFields.masteryKeys = [];
 
     const hashes = ctx.poeApiCharacter.passives?.hashes ?? [];
     for (const hash of hashes) {
       const node = this.passiveTreeService.passiveTree.getNode(`${hash}`);
       if (node?.isKeystone) {
-        ctx.keyStoneKeys.push(node.name);
+        ctx.vectorFields.keyStoneKeys.push(node.name);
       }
       if (node?.isMastery) {
         const effectHash =
@@ -64,7 +70,7 @@ export class LadderViewSnapshotService {
             (e) => e.effect === effectHash
           );
           if (effect) {
-            ctx.masteryKeys.push(effect.stats.join(" "));
+            ctx.vectorFields.masteryKeys.push(effect.stats.join(" "));
           }
         }
       }
@@ -184,8 +190,8 @@ export class LadderViewSnapshotService {
       mainSkillKeys.push(skill2.key);
     }
 
-    ctx.mainSkillKeys = mainSkillKeys.filter((e) => !!e);
-    ctx.allSkillKeys = sortedMainSkills.map((e) => e.key);
+    ctx.vectorFields.mainSkillKeys = mainSkillKeys.filter((e) => !!e);
+    ctx.vectorFields.allSkillKeys = sortedMainSkills.map((e) => e.key);
   }
 
   private async mapItems(ctx: LadderViewSnapshotContext) {
@@ -220,13 +226,23 @@ export class LadderViewSnapshotService {
     const offHandItem = allItems.find((e) => e.inventoryId === "Offhand");
     const offHandCategory = this.decodeIcon(offHandItem?.icon);
 
-    ctx.weaponCategory = [mainHandCategory, offHandCategory]
+    const helm = allItems.find((e) => e.inventoryId === "Helm");
+    ctx.vectorFields.enchant = helm.enchantMods?.[0];
+    ctx.vectorFields.helmCategory = this.decodeIcon(helm?.icon, 0);
+    ctx.vectorFields.helmBaseType = helm?.baseType?.toLowerCase();
+
+    ctx.vectorFields.weaponCategory = [mainHandCategory, offHandCategory]
       .filter((e) => !!e)
       .map((e) => e.slice(0, -1))
       .join("/");
+
+    ctx.vectorFields.allItemKeys = allItems
+      .filter((e) => e.frameType == 3 || e.frameType == 10)
+      .map((e) => e.name?.toLowerCase())
+      .filter((e) => !!e);
   }
 
-  private decodeIcon(icon: string) {
+  private decodeIcon(icon: string, offset: number = 1) {
     if (!icon) {
       return null;
     }
@@ -238,7 +254,9 @@ export class LadderViewSnapshotService {
     )?.[2];
     const categoryString = iconInfo["f"]?.split("/");
 
-    return categoryString?.[(categoryString?.length ?? 0) - 2];
+    return categoryString?.[
+      (categoryString?.length ?? 0) - offset - 1
+    ]?.toLowerCase();
   }
 
   private async presistSnapshot(ctx: LadderViewSnapshotContext) {
@@ -342,9 +360,4 @@ export interface LadderViewSnapshotContext {
   poeApiCharacter: PoeApiCharacter;
   vectorFields?: LadderViewVectorFields;
   items?: (PoeApiItem & { socketedInId?: string })[];
-  mainSkillKeys?: string[];
-  allSkillKeys?: string[];
-  keyStoneKeys?: string[];
-  masteryKeys?: string[];
-  weaponCategory?: string;
 }
