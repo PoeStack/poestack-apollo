@@ -40,6 +40,8 @@ import { LivePricingResolver } from "./resolvers/live-pricing-resolver";
 import LivePricingHistoryService from "./services/live-pricing/live-pricing-history-service";
 import StashViewSnapshotService from "./services/stash-view/stash-view-snapshot-service";
 import { LadderViewSnapshotService } from "./services/ladder-view/ladder-view-snapshot-service";
+import { LadderViewPobService } from "./services/ladder-view/ladder-view-pob-service";
+import { LadderViewVectorService } from "./services/ladder-view/ladder-view-vector-service";
 
 dotenv.config({ path: ".env.local" });
 
@@ -188,6 +190,15 @@ process
   if (process.env.START_STASH_VIEW_AUTOMATIC_SNAPSHOTS === "true") {
     container.resolve(StashViewSnapshotService).startAutomaticSnapshotJob();
   }
+
+  if (process.env.START_LADDER_VIEW_POB_PROCESSOR === "true") {
+    container.resolve(LadderViewPobService).startJob();
+  }
+
+  if (process.env.START_LADDER_VIEW_VECTOR_PROCESSOR === "true") {
+    container.resolve(LadderViewVectorService).startJob();
+  }
+
 
   if (process.env.START_ONE_CLICK_JOB === "true") {
     await container.resolve(TftBlacklistService).pullBlacklist();

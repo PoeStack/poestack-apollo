@@ -239,10 +239,10 @@ model StashViewSnapshotJob {
 model StashViewValueSnapshot {
   id String @id
 
-  userId  String
-  league  String
+  userId String
+  league String
 
-  type String @default("tab value")
+  type    String  @default("tab value")
   stashId String?
 
   timestamp DateTime
@@ -356,31 +356,21 @@ model UserNotification {
 }
 
 model LadderViewSnapshotRecord {
-  userId      String
-  characterId String
-  timestamp   DateTime
+  userId             String
+  characterOpaqueKey String
+  timestamp          DateTime
 
   snapshotHashString String
 
-  lastestSnapshot Boolean
-
   snapshotStatus String
-  pobShardKey    Int
-
-  @@id([userId, characterId, timestamp])
-  @@index([userId])
-  @@index([characterId])
-}
-
-model LadderViewSnapshotVectorSummary {
-  userId      String
-  characterId String
-  timestamp   DateTime
 
   characterApiFields Json
   characterPobFields Json
 
-  @@id([userId, characterId])
+  lockKey       String?
+  lockTimestamp DateTime?
+
+  @@id([userId, characterOpaqueKey, timestamp])
   @@index([userId])
-  @@index([characterId])
+  @@index([characterOpaqueKey])
 }

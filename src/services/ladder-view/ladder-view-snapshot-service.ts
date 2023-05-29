@@ -1,19 +1,23 @@
-import { singleton } from "tsyringe";
-import PoeApi from "../poe/poe-api";
-import _ from "lodash";
-import PostgresService from "../mongo/postgres-service";
-import ItemGroupingService from "../pricing/item-grouping-service";
-import { PassiveTreeService } from "../passive-tree/passive-tree-service";
+import { PoeApiCharacter } from "@gql/resolvers-types";
 import {
   PoeCharacter,
+  Prisma,
   TwitchStreamerProfile,
   UserProfile,
 } from "@prisma/client";
-import { PoeApiCharacter } from "@gql/resolvers-types";
-import { LadderViewVectorFields } from "./ladder-view-models";
+import _ from "lodash";
+import { singleton } from "tsyringe";
 import { PoeApiItem } from "../../gql/__generated__/resolvers-types";
-import { GeneralUtils } from "../../utils/general-util";
 import LivePricingService from "../../services/live-pricing/live-pricing-service";
+import PostgresService from "../mongo/postgres-service";
+import { PassiveTreeService } from "../passive-tree/passive-tree-service";
+import PoeApi from "../poe/poe-api";
+import ItemGroupingService from "../pricing/item-grouping-service";
+import { S3Service } from "./../s3-service";
+import {
+  LadderViewSnapshot,
+  LadderViewVectorFields,
+} from "./ladder-view-models";
 
 @singleton()
 export class LadderViewSnapshotService {
@@ -22,6 +26,7 @@ export class LadderViewSnapshotService {
     private readonly postgresService: PostgresService,
     private readonly itemGroupingService: ItemGroupingService,
     private readonly passiveTreeService: PassiveTreeService,
+    private readonly s3Service: S3Service,
     private readonly livePricingService: LivePricingService
   ) {}
 
@@ -217,8 +222,11 @@ export class LadderViewSnapshotService {
       listingPercent: 10,
       league: ctx.poeApiCharacter.league,
     });
-
     ctx.items = allItems;
+
+    ctx.vectorFields.totalValueChaos = Math.round(
+      ctx.items.reduce((p, c) => (c["fixedValue"] ?? 0) + p, 0)
+    );
 
     const mainHandItem = allItems.find((e) => e.inventoryId === "Weapon");
     const mainHandCategory = this.decodeIcon(mainHandItem?.icon);
@@ -271,39 +279,46 @@ export class LadderViewSnapshotService {
     }
 
     await this.postgresService.prisma.ladderViewSnapshotRecord.updateMany({
-      where: { characterId: ctx.poeCharacter.id },
-      data: { lastestSnapshot: false },
+      where: { characterOpaqueKey: ctx.poeCharacter.opaqueKey },
+      data: {
+        characterApiFields: Prisma.JsonNull,
+        characterPobFields: Prisma.JsonNull,
+      },
     });
     await this.postgresService.prisma.ladderViewSnapshotRecord.create({
       data: {
         userId: ctx.userProfile.userId,
-        characterId: ctx.poeCharacter.id,
-        pobShardKey: GeneralUtils.random(0, 100),
+        characterOpaqueKey: ctx.poeCharacter.opaqueKey,
         snapshotHashString: "NA",
-        snapshotStatus: "awaiting generation",
-        lastestSnapshot: true,
+        snapshotStatus: "init",
+        characterApiFields: ctx.vectorFields as any,
+        characterPobFields: Prisma.JsonNull,
         timestamp: ctx.timestamp,
       },
     });
-    await this.postgresService.prisma.ladderViewSnapshotVectorSummary.upsert({
+
+    const snapshot: LadderViewSnapshot = {
+      userOpaqueKey: ctx.userProfile.opaqueKey,
+      poeApiCharacter: ctx.poeApiCharacter,
+    };
+
+    await this.s3Service.putJson(
+      "poe-stack-ladder-view",
+      `snapshots/${
+        ctx.poeCharacter.opaqueKey
+      }/${ctx.timestamp.toISOString()}/snapshot.json`,
+      snapshot
+    );
+
+    await this.postgresService.prisma.ladderViewSnapshotRecord.update({
       where: {
-        userId_characterId: {
-          userId: ctx.userProfile.userId,
-          characterId: ctx.poeCharacter.id,
+        userId_characterOpaqueKey_timestamp: {
+          userId: ctx.poeCharacter.userId,
+          characterOpaqueKey: ctx.poeCharacter.opaqueKey,
+          timestamp: ctx.timestamp,
         },
       },
-      create: {
-        userId: ctx.userProfile.userId,
-        characterId: ctx.poeCharacter.id,
-        timestamp: ctx.timestamp,
-        characterApiFields: ctx.vectorFields as any,
-        characterPobFields: {},
-      },
-      update: {
-        timestamp: ctx.timestamp,
-        characterApiFields: ctx.vectorFields as any,
-        characterPobFields: {},
-      },
+      data: { snapshotStatus: "awaiting pob update" },
     });
   }
 

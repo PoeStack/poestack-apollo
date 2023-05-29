@@ -1,7 +1,10 @@
+import { PoeApiCharacter } from "@gql/resolvers-types";
+
 export interface LadderViewVectorFields {
   name?: string;
   weaponCategory?: string;
   experience?: number;
+  totalValueChaos?: number;
   level?: number;
   keyStoneKeys?: string[];
   masteryKeys?: string[];
@@ -15,4 +18,9 @@ export interface LadderViewVectorFields {
   bandit?: string;
   pantheonMajor?: string;
   pantheonMinor?: string;
+}
+
+export interface LadderViewSnapshot {
+  userOpaqueKey: string;
+  poeApiCharacter: PoeApiCharacter
 }
