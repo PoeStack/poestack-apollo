@@ -5,6 +5,7 @@ import StopWatch from "../../services/utils/stop-watch";
 import { Logger } from "../../services/logger";
 import _ from "lodash";
 import PostgresService from "../../services/mongo/postgres-service";
+import { LRUCache } from "lru-cache";
 
 export class LivePricingInput {
   itemGroupHashString?: string | null | undefined;
@@ -39,12 +40,33 @@ export class LivePricingResult {
 
 @singleton()
 export default class LivePricingService {
+  private readonly valuationCache = new LRUCache<string, LivePricingValuation>({
+    ttl: 1000 * 60 * 15,
+
+    maxSize: 100_000 * 14,
+    sizeCalculation: (value, key) => {
+      return (value.validListingsLength ?? 0) + 10;
+    },
+
+    updateAgeOnGet: false,
+    updateAgeOnHas: false,
+  });
+
   constructor(
     private liveListingService: LiveListingService,
     private postgresService: PostgresService
   ) {}
 
-  public async livePriceSimpleByKey(league: string, itemGroupKey: string): Promise<LivePricingValuation> {
+  public async livePriceSimpleByKey(
+    league: string,
+    itemGroupKey: string
+  ): Promise<LivePricingValuation | null> {
+    const cacheKey = `by_key_${league}_${itemGroupKey}`;
+    const cachedValuation = this.valuationCache.get(cacheKey);
+    if (cachedValuation !== undefined) {
+      return cachedValuation;
+    }
+
     const itemGroup = await this.postgresService.prisma.itemGroupInfo.findFirst(
       { where: { key: itemGroupKey }, select: { hashString: true } }
     );
@@ -52,6 +74,8 @@ export default class LivePricingService {
       { itemGroupHashString: itemGroup.hashString },
       { league: league }
     );
+
+    this.valuationCache.set(cacheKey, !result ? null : result);
     return result;
   }
 

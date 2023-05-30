@@ -93,7 +93,7 @@ export default class PublicStashStreamService {
 
   public async writePoeProfileActivity() {
     const records = this.poeProfileActivityRecord;
-    if (Object.values(records).length > 50) {
+    if (Object.values(records).length > 2000) {
       this.poeProfileActivityRecord = {};
 
       const promises = Object.entries(records).map(
@@ -123,12 +123,12 @@ export default class PublicStashStreamService {
 
           await this.writePoeLiveListings(toWrite);
 
-          try {
+        /*   try {
             await this.writePoeProfileActivity();
           } catch (error) {
             Logger.error("error in write poe profile activity", error);
           }
-
+ */
           await this.postgresService.prisma.genericParam.upsert({
             where: { key: "last_tracked_public_stash_change_id" },
             create: {

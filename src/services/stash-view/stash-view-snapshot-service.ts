@@ -414,13 +414,11 @@ export default class StashViewSnapshotService {
       await this.s3Service.deleteItem("poe-stack-stash-view", key);
     }
 
-    await this.postgresService.prisma.stashViewSnapshotRecord.delete({
+    await this.postgresService.prisma.stashViewSnapshotRecord.deleteMany({
       where: {
-        userId_league_timestamp: {
-          userId: config.userId,
-          league: config.league,
-          timestamp: config.timestamp,
-        },
+        userId: config.userId,
+        league: config.league,
+        timestamp: config.timestamp,
       },
     });
   }

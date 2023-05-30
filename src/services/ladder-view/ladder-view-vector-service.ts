@@ -130,6 +130,8 @@ export class LadderViewVectorService {
       for (const league of leagues) {
         await this.updateVectors(league);
       }
+
+      await new Promise((res) => setTimeout(res, 1000 * 60 * 30));
     }
   }
 }

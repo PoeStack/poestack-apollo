@@ -173,7 +173,13 @@ export class StashViewResolver {
     const snapshots =
       await this.postgresService.prisma.stashViewValueSnapshot.findMany({
         where: { userId: ctx.userId, league: league },
-        select: { timestamp: true, stashId: true, lpStockValue: true },
+        select: {
+          timestamp: true,
+          stashId: true,
+          lpStockValue: true,
+          lpValue: true,
+          value: true,
+        },
       });
 
     const mappedSeries: GqlStashViewValueSnapshotSeries[] = [];
@@ -183,7 +189,9 @@ export class StashViewResolver {
         if (stashId) {
           mappedSeries.push({
             stashId: stashId,
-            values: series.map((e) => e.lpStockValue),
+            values: series.map(
+              (e) => e.lpStockValue ?? e.lpValue ?? e.value ?? 0
+            ),
             timestamps: series.map((e) => e.timestamp),
           });
         }
