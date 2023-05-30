@@ -121,7 +121,9 @@ model PoeCharacter {
   lastLevel                Int       @default(0)
   lastLevelChangeTimestamp DateTime?
 
-  ladderViewNextSnapshotTimestamp DateTime?
+  ladderViewNextSnapshotTimestamp           DateTime  @default(now())
+  ladderViewLastSnapshotHash                String?
+  ladderViewLastSnapshotHashUpdateTimestamp DateTime?
 
   lastSnapshotTimestamp           DateTime?
   lastSnapshotHash                String?

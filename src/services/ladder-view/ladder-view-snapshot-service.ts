@@ -19,6 +19,8 @@ import {
   LadderViewSnapshot,
   LadderViewVectorFields,
 } from "./ladder-view-models";
+import objectHash from "object-hash";
+import { Logger } from "../logger";
 
 @singleton()
 export class LadderViewSnapshotService {
@@ -36,8 +38,34 @@ export class LadderViewSnapshotService {
     const ctx = await this.initContext(userId, characterId);
     if (ctx) {
       await this.mapCharacterData(ctx);
-      await this.presistSnapshot(ctx);
+      if (!ctx.looted) {
+        this.generateHash(ctx);
+        if (ctx.snapshotHash !== ctx.poeCharacter.ladderViewLastSnapshotHash) {
+          await this.presistSnapshot(ctx);
+        }
+      }
     }
+
+    const delayHours = ctx.poeCharacter.lastLeague === "Standard" ? 24 * 7 : 12;
+    await this.postgresService.prisma.poeCharacter.updateMany({
+      where: { id: ctx.poeCharacter.id },
+      data: {
+        ladderViewNextSnapshotTimestamp: new Date(
+          Date.now() + 1000 * 60 * 60 * delayHours
+        ),
+      },
+    });
+  }
+
+  private generateHash(ctx: LadderViewSnapshotContext) {
+    const hashFields = {
+      level: ctx.poeApiCharacter.level,
+      items: ctx.items ?? [],
+      passives: ctx.poeApiCharacter.passives,
+      league: ctx.poeApiCharacter.league,
+    };
+    const hash = objectHash(hashFields);
+    ctx.snapshotHash = hash;
   }
 
   private async mapCharacterData(ctx: LadderViewSnapshotContext) {
@@ -45,18 +73,20 @@ export class LadderViewSnapshotService {
 
     await this.mapItems(ctx);
     this.detectLooted(ctx);
-    this.mapSkills(ctx);
-    this.mapPassives(ctx);
+    if (!ctx.looted) {
+      this.mapSkills(ctx);
+      this.mapPassives(ctx);
 
-    ctx.vectorFields.name = ctx.poeApiCharacter.name ?? "NA";
-    ctx.vectorFields.experience = ctx.poeApiCharacter.experience ?? 0;
-    ctx.vectorFields.level = ctx.poeApiCharacter.level ?? 0;
+      ctx.vectorFields.name = ctx.poeApiCharacter.name ?? "NA";
+      ctx.vectorFields.experience = ctx.poeApiCharacter.experience ?? 0;
+      ctx.vectorFields.level = ctx.poeApiCharacter.level ?? 0;
 
-    ctx.vectorFields.bandit = ctx.poeApiCharacter.passives?.bandit_choice;
-    ctx.vectorFields.pantheonMajor =
-      ctx.poeApiCharacter.passives?.pantheon_major;
-    ctx.vectorFields.pantheonMinor =
-      ctx.poeApiCharacter.passives?.pantheon_minor;
+      ctx.vectorFields.bandit = ctx.poeApiCharacter.passives?.bandit_choice;
+      ctx.vectorFields.pantheonMajor =
+        ctx.poeApiCharacter.passives?.pantheon_major;
+      ctx.vectorFields.pantheonMinor =
+        ctx.poeApiCharacter.passives?.pantheon_minor;
+    }
   }
 
   private mapPassives(ctx: LadderViewSnapshotContext) {
@@ -84,7 +114,9 @@ export class LadderViewSnapshotService {
     }
   }
 
-  private detectLooted(ctx: LadderViewSnapshotContext) {}
+  private detectLooted(ctx: LadderViewSnapshotContext) {
+    ctx.looted = false;
+  }
 
   private mapSkills(ctx: LadderViewSnapshotContext) {
     const negativeSupports = [
@@ -252,7 +284,7 @@ export class LadderViewSnapshotService {
       .filter((e) => !!e);
   }
 
-  private decodeIcon(icon: string, offset: number = 1) {
+  private decodeIcon(icon: string, offset = 1) {
     if (!icon) {
       return null;
     }
@@ -309,11 +341,19 @@ export class LadderViewSnapshotService {
 
     await this.s3Service.putJson(
       "poe-stack-ladder-view",
-      `snapshots/${
+      `v1/snapshots/${
         ctx.poeCharacter.opaqueKey
       }/${ctx.timestamp.toISOString()}/snapshot.json`,
       snapshot
     );
+
+    await this.postgresService.prisma.poeCharacter.updateMany({
+      where: { id: ctx.poeCharacter.id },
+      data: {
+        ladderViewLastSnapshotHash: ctx.snapshotHash,
+        ladderViewLastSnapshotHashUpdateTimestamp: new Date(),
+      },
+    });
 
     await this.postgresService.prisma.ladderViewSnapshotRecord.update({
       where: {
@@ -372,6 +412,38 @@ export class LadderViewSnapshotService {
   public async takeSnapshot(userId: string, characterId: string) {
     await this.takeSnapshotInternal(userId, characterId);
   }
+
+  private async runSweep() {
+    const characters = await this.postgresService.prisma.poeCharacter.findMany({
+      where: { ladderViewNextSnapshotTimestamp: { lte: new Date() } },
+      take: 50,
+    });
+
+    await this.postgresService.prisma.poeCharacter.updateMany({
+      where: { id: { in: characters.map((e) => e.id) } },
+      data: {
+        ladderViewNextSnapshotTimestamp: new Date(Date.now() + 1000 * 60 * 20),
+      },
+    });
+
+    for (const character of characters) {
+      try {
+        await this.takeSnapshot(character.userId, character.id);
+      } catch (error) {
+        Logger.error("error in ladder view snapshot", error);
+      }
+    }
+  }
+
+  public async startJob() {
+    for (;;) {
+      try {
+        await this.runSweep();
+      } catch (error) {
+        Logger.error("error in ladder view sweep", error);
+      }
+    }
+  }
 }
 export interface LadderViewSnapshotContext {
   timestamp: Date;
@@ -381,5 +453,7 @@ export interface LadderViewSnapshotContext {
   poeCharacter: PoeCharacter;
   poeApiCharacter: PoeApiCharacter;
   vectorFields?: LadderViewVectorFields;
+  snapshotHash?: string;
+  looted?: boolean;
   items?: (PoeApiItem & { socketedInId?: string })[];
 }
