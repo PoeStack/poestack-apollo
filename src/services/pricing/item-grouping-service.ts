@@ -191,7 +191,7 @@ export class HelmEnchantGroupIdentifier implements ItemGroupIdentifier {
 
         const group: InternalGroup = {
           key: enchant,
-          tag: "helm base enchant",
+          tag: "enchant",
           beta: true,
           hashProperties: {
             type: itemCategory,
