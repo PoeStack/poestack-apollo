@@ -21,6 +21,7 @@ import {
 } from "./ladder-view-models";
 import objectHash from "object-hash";
 import { Logger } from "../logger";
+import { ItemUtils } from "../../utils/item-utils";
 
 @singleton()
 export class LadderViewSnapshotService {
@@ -263,14 +264,14 @@ export class LadderViewSnapshotService {
     );
 
     const mainHandItem = allItems.find((e) => e.inventoryId === "Weapon");
-    const mainHandCategory = this.decodeIcon(mainHandItem?.icon);
+    const mainHandCategory = ItemUtils.decodeIcon(mainHandItem?.icon);
 
     const offHandItem = allItems.find((e) => e.inventoryId === "Offhand");
-    const offHandCategory = this.decodeIcon(offHandItem?.icon);
+    const offHandCategory = ItemUtils.decodeIcon(offHandItem?.icon);
 
     const helm = allItems.find((e) => e.inventoryId === "Helm");
     ctx.vectorFields.enchant = helm.enchantMods?.[0];
-    ctx.vectorFields.helmCategory = this.decodeIcon(helm?.icon, 0);
+    ctx.vectorFields.helmCategory = ItemUtils.decodeIcon(helm?.icon, 0);
     ctx.vectorFields.helmBaseType = helm?.baseType?.toLowerCase();
 
     ctx.vectorFields.weaponCategory = [mainHandCategory, offHandCategory]
@@ -282,23 +283,6 @@ export class LadderViewSnapshotService {
       .filter((e) => e.frameType == 3 || e.frameType == 10)
       .map((e) => e.name?.toLowerCase())
       .filter((e) => !!e);
-  }
-
-  private decodeIcon(icon: string, offset = 1) {
-    if (!icon) {
-      return null;
-    }
-
-    const split = icon.split("/");
-    const base64String = split[5];
-    const iconInfo = JSON.parse(
-      Buffer.from(base64String, "base64").toString("ascii")
-    )?.[2];
-    const categoryString = iconInfo["f"]?.split("/");
-
-    return categoryString?.[
-      (categoryString?.length ?? 0) - offset - 1
-    ]?.toLowerCase();
   }
 
   private async presistSnapshot(ctx: LadderViewSnapshotContext) {
