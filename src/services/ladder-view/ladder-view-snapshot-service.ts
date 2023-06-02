@@ -44,17 +44,18 @@ export class LadderViewSnapshotService {
           await this.presistSnapshot(ctx);
         }
       }
-    }
 
-    const delayHours = ctx.poeCharacter.lastLeague === "Standard" ? 24 * 7 : 12;
-    await this.postgresService.prisma.poeCharacter.updateMany({
-      where: { id: ctx.poeCharacter.id },
-      data: {
-        ladderViewNextSnapshotTimestamp: new Date(
-          Date.now() + 1000 * 60 * 60 * delayHours
-        ),
-      },
-    });
+      const delayHours =
+        ctx.poeCharacter.lastLeague === "Standard" ? 24 * 7 : 12;
+      await this.postgresService.prisma.poeCharacter.updateMany({
+        where: { id: ctx.poeCharacter.id },
+        data: {
+          ladderViewNextSnapshotTimestamp: new Date(
+            Date.now() + 1000 * 60 * 60 * delayHours
+          ),
+        },
+      });
+    }
   }
 
   private generateHash(ctx: LadderViewSnapshotContext) {
@@ -269,7 +270,7 @@ export class LadderViewSnapshotService {
     const offHandCategory = this.decodeIcon(offHandItem?.icon);
 
     const helm = allItems.find((e) => e.inventoryId === "Helm");
-    ctx.vectorFields.enchant = helm.enchantMods?.[0];
+    ctx.vectorFields.enchant = helm?.enchantMods?.[0];
     ctx.vectorFields.helmCategory = this.decodeIcon(helm?.icon, 0);
     ctx.vectorFields.helmBaseType = helm?.baseType?.toLowerCase();
 

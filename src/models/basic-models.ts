@@ -1491,3 +1491,11 @@ export class GqlLivePricingHistoryResult {
   @Field(() => [GqlLivePricingHistoryGroup])
   results: GqlLivePricingHistoryGroup[];
 }
+
+@ObjectType("LadderViewVectorRecord")
+export class GqlLadderViewVectorRecord {
+  @Field()
+  league: string;
+  @Field()
+  timestamp: Date;
+}

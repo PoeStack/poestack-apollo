@@ -35,7 +35,7 @@ export class LadderViewPobService {
 
     const snapshot: LadderViewSnapshot = await this.s3Service.getJson(
       "poe-stack-ladder-view",
-      `snapshots/${characterOpaqueKey}/${snapshotTimestamp.toISOString()}/snapshot.json`
+      `v1/snapshots/${characterOpaqueKey}/${snapshotTimestamp.toISOString()}/snapshot.json`
     );
     if (!snapshot) {
       return;
@@ -58,7 +58,7 @@ export class LadderViewPobService {
 
     await this.s3Service.putJson(
       "poe-stack-ladder-view",
-      `snapshots/${characterOpaqueKey}/${snapshotTimestamp.toISOString()}/pob.json`,
+      `v1/snapshots/${characterOpaqueKey}/${snapshotTimestamp.toISOString()}/pob.json`,
       { pobStats: pobStats }
     );
 

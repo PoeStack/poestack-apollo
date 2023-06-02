@@ -98,12 +98,12 @@ export class LadderViewVectorService {
     });
     await this.s3Service.putJson(
       "poe-stack-ladder-view",
-      `vectors/${league}/vectors/${timestamp.toISOString()}/header.json`,
+      `v1/vectors/${league}/vectors/${timestamp.toISOString()}/header.json`,
       header
     );
     await this.s3Service.putJson(
       "poe-stack-ladder-view",
-      `vectors/${league}/vectors/${timestamp.toISOString()}/values.json`,
+      `v1/vectors/${league}/vectors/${timestamp.toISOString()}/values.json`,
       { types: dataVector.output.types, values: dataVector.output.values }
     );
 
@@ -111,14 +111,14 @@ export class LadderViewVectorService {
     for (const chunk of entriesChunks) {
       await this.s3Service.putJson(
         "poe-stack-ladder-view",
-        `vectors/${league}/vectors/${timestamp.toISOString()}/entries_${index++}.json`,
+        `v1/vectors/${league}/vectors/${timestamp.toISOString()}/entries_${index++}.json`,
         { entries: chunk }
       );
     }
 
     await this.s3Service.putJson(
       "poe-stack-ladder-view",
-      `vectors/${league}/current.json`,
+      `v1/vectors/${league}/current.json`,
       header
     );
     console.log(dataVector);
