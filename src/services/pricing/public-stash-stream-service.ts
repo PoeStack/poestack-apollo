@@ -42,49 +42,57 @@ export default class PublicStashStreamService {
 
     const stashUpdates = [...response.stashes];
     while (stashUpdates.length > 0) {
-      const publicStashUpdate = stashUpdates.shift();
-      this.poeProfileActivityRecord[publicStashUpdate.accountName] = new Date();
+      try {
+        const publicStashUpdate = stashUpdates.shift();
+        this.poeProfileActivityRecord[publicStashUpdate.accountName] =
+          new Date();
 
-      const listingsMap: Record<string, PoeLiveListing> = {};
-      for (const item of publicStashUpdate.items) {
-        if (item.lockedToAccount || item.lockedToCharacter) {
-          continue;
-        }
+        const listingsMap: Record<string, PoeLiveListing> = {};
+        for (const item of publicStashUpdate.items) {
+          if (item.lockedToAccount || item.lockedToCharacter) {
+            continue;
+          }
 
-        const note = item.note ?? item.forum_note ?? publicStashUpdate.stash;
-        if (note?.trim()?.length > 4) {
-          const noteValue = await this.fetchNoteValue(
-            publicStashUpdate.league,
-            note
-          );
-          if (noteValue && noteValue > 0) {
-            const group = this.itemGroupingService.findOrCreateItemGroup(item);
+          const note = item.note ?? item.forum_note ?? publicStashUpdate.stash;
+          if (note?.trim()?.length > 4) {
+            const noteValue = await this.fetchNoteValue(
+              publicStashUpdate.league,
+              note
+            );
+            if (noteValue && noteValue > 0) {
+              const group = this.itemGroupingService.findOrCreateItemGroup(
+                item,
+                true
+              );
 
-            if (group) {
-              if (group.key === "rogue's marker" && noteValue >= 1) {
-                continue;
-              }
+              if (group) {
+                if (group.key === "rogue's marker" && noteValue >= 1) {
+                  continue;
+                }
 
-              const listing = listingsMap[group.hashString];
-              if (!listing) {
-                listingsMap[group.hashString] = {
-                  publicStashId: publicStashUpdate.id,
-                  itemGroupHashString: group.hashString,
-                  quantity: item.stackSize ?? 1,
-                  league: publicStashUpdate.league,
-                  listedAtTimestamp: new Date(),
-                  listedValue: noteValue,
-                  poeProfileName: publicStashUpdate.accountName,
-                };
-              } else {
-                listing.quantity += item.stackSize ?? 1;
+                const listing = listingsMap[group.hashString];
+                if (!listing) {
+                  listingsMap[group.hashString] = {
+                    publicStashId: publicStashUpdate.id,
+                    itemGroupHashString: group.hashString,
+                    quantity: item.stackSize ?? 1,
+                    league: publicStashUpdate.league,
+                    listedAtTimestamp: new Date(),
+                    listedValue: noteValue,
+                    poeProfileName: publicStashUpdate.accountName,
+                  };
+                } else {
+                  listing.quantity += item.stackSize ?? 1;
+                }
               }
             }
           }
         }
-      }
 
-      listingsToWrite[publicStashUpdate.id] = Object.values(listingsMap);
+        listingsToWrite[publicStashUpdate.id] = Object.values(listingsMap);
+      } catch (error) {
+        Logger.error("error in processing public stash update", error);
+      }
     }
     sw.stop("map");
 
@@ -123,12 +131,12 @@ export default class PublicStashStreamService {
 
           await this.writePoeLiveListings(toWrite);
 
-        /*   try {
+          try {
             await this.writePoeProfileActivity();
           } catch (error) {
             Logger.error("error in write poe profile activity", error);
           }
- */
+
           await this.postgresService.prisma.genericParam.upsert({
             where: { key: "last_tracked_public_stash_change_id" },
             create: {

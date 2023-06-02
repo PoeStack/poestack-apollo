@@ -5,6 +5,7 @@ import { singleton } from "tsyringe";
 import { type ItemGroupInfo } from "@prisma/client";
 import { Logger } from "../logger";
 import { PoeApiItem } from "../../gql/__generated__/resolvers-types";
+import { ItemUtils } from "utils/item-utils";
 
 @singleton()
 export default class ItemGroupingService {
@@ -28,7 +29,8 @@ export default class ItemGroupingService {
       new MapGroupIdentifier(),
       new CompassGroupIdentifier(),
       new InucbatorGroupIdentifier(),
-      new CurrencyGroupIdentifier()
+      new CurrencyGroupIdentifier(),
+      new HelmEnchantGroupIdentifier()
     );
   }
 
@@ -54,7 +56,10 @@ export default class ItemGroupingService {
     }
   }
 
-  public findOrCreateItemGroup(item: PoeApiItem): ItemGroupInfo | null {
+  public findOrCreateItemGroup(
+    item: PoeApiItem,
+    beta = false
+  ): ItemGroupInfo | null {
     if (item.lockedToAccount || item.lockedToCharacter) {
       return null;
     }
@@ -107,6 +112,10 @@ export default class ItemGroupingService {
           this.itemGroupHashStringCache.add(itemGroup.hashString);
         }
 
+        if (!!internalGroup.beta && !beta) {
+          return null;
+        }
+
         return itemGroup;
       }
     }
@@ -116,6 +125,7 @@ export default class ItemGroupingService {
 }
 
 interface InternalGroup {
+  beta?: boolean;
   key: string;
   tag: string;
   hashProperties: Record<string, number | string | boolean>;
@@ -161,6 +171,31 @@ export class BloodFilledVesselGroupIdentifier implements ItemGroupIdentifier {
           tag: "fragment",
           hashProperties: {
             monsterLvl: parseInt(monsterLvl),
+          },
+        };
+        return group;
+      }
+    }
+    return null;
+  }
+}
+
+export class HelmEnchantGroupIdentifier implements ItemGroupIdentifier {
+  group(item: PoeApiItem): InternalGroup {
+    const enchant = item.enchantMods?.join(" ");
+    if (enchant && [0, 1, 2].includes(item.frameType)) {
+      const itemCategory = ItemUtils.decodeIcon(item.icon);
+
+      if (itemCategory?.includes("helm")) {
+        const ilvl = item["ilvl"] ?? item.itemLevel;
+
+        const group: InternalGroup = {
+          key: enchant,
+          tag: "enchant",
+          beta: true,
+          hashProperties: {
+            type: itemCategory,
+            ilvl: ilvl >= 84 ? "84+" : "<84",
           },
         };
         return group;
