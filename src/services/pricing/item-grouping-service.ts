@@ -5,7 +5,7 @@ import { singleton } from "tsyringe";
 import { type ItemGroupInfo } from "@prisma/client";
 import { Logger } from "../logger";
 import { PoeApiItem } from "../../gql/__generated__/resolvers-types";
-import { ItemUtils } from "utils/item-utils";
+import { ItemUtils } from "../../utils/item-utils";
 
 @singleton()
 export default class ItemGroupingService {
@@ -67,69 +67,87 @@ export default class ItemGroupingService {
     for (const groupIdentifier of this.pricingHandlers) {
       const internalGroup: InternalGroup = groupIdentifier.group(item);
       if (internalGroup) {
-        const encodedHash: string = objectHash(
-          {
-            tag: internalGroup.tag,
-            key: internalGroup.key,
-            propertiesHash: internalGroup.hashProperties,
-          },
-          { unorderedArrays: true, unorderedObjects: true }
-        );
-
-        const maxInventoryStackSize =
-          item.properties
-            ?.filter((p) => p.name === "Stack Size")?.[0]
-            ?.values?.[0]?.[0]?.split("/")?.[1] ?? "1";
-
-        const propertiesArray = Object.entries(
-          internalGroup.hashProperties ?? {}
-        ).map((e) => {
-          return { key: e[0], value: e[1] };
-        });
-
-        const itemGroup: ItemGroupInfo = {
-          hashString: encodedHash,
-          key: internalGroup.key,
-          tag: internalGroup.tag,
-
-          properties: propertiesArray,
-          hashFields: internalGroup.hashProperties ?? {},
-
-          baseType:
-            (item.name?.length > 0 ? item.name : null) ??
-            (item.baseType?.length > 0 ? item.baseType : null) ??
-            item.typeLine,
-          displayName: internalGroup.displayOverride,
-          inventoryMaxStackSize: parseInt(maxInventoryStackSize),
-          icon: item.icon,
-
-          createdAtTimestamp: new Date(),
-          updatedAtTimestamp: new Date(),
-        };
-
-        if (!this.itemGroupHashStringCache.has(itemGroup.hashString)) {
-          this.itemGroupsToWrite[itemGroup.hashString] = itemGroup;
-          this.itemGroupHashStringCache.add(itemGroup.hashString);
-        }
-
+        const itemGroup = this.internalGroupToInfo(internalGroup, item);
         if (!!internalGroup.beta && !beta) {
           return null;
         }
-
         return itemGroup;
       }
     }
 
     return null;
   }
+
+  private internalGroupToInfo(
+    internalGroup: InternalGroup,
+    item: PoeApiItem
+  ): ItemGroupInfo | null {
+    const encodedHash: string = objectHash(
+      {
+        tag: internalGroup.tag,
+        key: internalGroup.key,
+        propertiesHash: internalGroup.hashProperties,
+      },
+      { unorderedArrays: true, unorderedObjects: true }
+    );
+
+    const maxInventoryStackSize =
+      item.properties
+        ?.filter((p) => p.name === "Stack Size")?.[0]
+        ?.values?.[0]?.[0]?.split("/")?.[1] ?? "1";
+
+    const propertiesArray = Object.entries(
+      internalGroup.hashProperties ?? {}
+    ).map((e) => {
+      return { key: e[0], value: e[1] };
+    });
+
+    let parentHashString = null;
+    if (internalGroup.parent) {
+      const parentGroupInfo = this.internalGroupToInfo(
+        internalGroup.parent,
+        item
+      );
+      parentHashString = parentGroupInfo.hashString;
+    }
+
+    const itemGroup: ItemGroupInfo = {
+      hashString: encodedHash,
+      key: internalGroup.key,
+      tag: internalGroup.tag,
+
+      properties: propertiesArray,
+      hashFields: internalGroup.hashProperties ?? {},
+
+      baseType:
+        (item.name?.length > 0 ? item.name : null) ??
+        (item.baseType?.length > 0 ? item.baseType : null) ??
+        item.typeLine,
+      displayName: internalGroup.displayOverride,
+      inventoryMaxStackSize: parseInt(maxInventoryStackSize),
+      icon: item.icon,
+
+      parentHashString: parentHashString,
+
+      createdAtTimestamp: new Date(),
+      updatedAtTimestamp: new Date(),
+    };
+
+    if (!this.itemGroupHashStringCache.has(itemGroup.hashString)) {
+      this.itemGroupsToWrite[itemGroup.hashString] = itemGroup;
+      this.itemGroupHashStringCache.add(itemGroup.hashString);
+    }
+    return itemGroup;
+  }
 }
 
 interface InternalGroup {
-  beta?: boolean;
+  parent?: InternalGroup;
   key: string;
   tag: string;
-  hashProperties: Record<string, number | string | boolean>;
+  hashProperties: Record<string, number | string | boolean | string[]>;
   displayOverride?: string;
+  beta?: boolean;
 }
 
 export interface ItemGroupIdentifier {
@@ -184,17 +202,20 @@ export class HelmEnchantGroupIdentifier implements ItemGroupIdentifier {
   group(item: PoeApiItem): InternalGroup {
     const enchant = item.enchantMods?.join(" ");
     if (enchant && [0, 1, 2].includes(item.frameType)) {
-      const itemCategory = ItemUtils.decodeIcon(item.icon);
+      const itemCategory = ItemUtils.decodeIcon(item.icon, 0);
 
-      if (itemCategory?.includes("helm")) {
+      if (itemCategory?.includes("helmet")) {
         const ilvl = item["ilvl"] ?? item.itemLevel;
+        const cleanCategory = itemCategory
+          .replaceAll("helmet", "")
+          .replaceAll(/[0-9]/g, "");
 
         const group: InternalGroup = {
           key: enchant,
           tag: "enchant",
           beta: true,
           hashProperties: {
-            type: itemCategory,
+            type: cleanCategory,
             ilvl: ilvl >= 84 ? "84+" : "<84",
           },
         };
@@ -207,20 +228,58 @@ export class HelmEnchantGroupIdentifier implements ItemGroupIdentifier {
 
 export class UnqiueGearGroupIdentifier implements ItemGroupIdentifier {
   group(item: PoeApiItem): InternalGroup {
-    if (item.frameType === 3 || item.frameType === 10) {
-      const group: InternalGroup = {
+    const key = item.name?.toLowerCase();
+    if ((item.frameType === 3 || item.frameType === 10) && key?.length > 0) {
+      const baseGroup: InternalGroup = {
         key: item.name?.toLowerCase(),
         tag: "unique",
         hashProperties: {
-          sixLink: item.sockets?.filter((s) => s.group === 0).length === 6,
-          corrupted: !!item.corrupted,
-          foilVariation: item.foilVariation ?? null,
+          sixLink: false,
+          corrupted: null,
+          corruptedMods: null,
+          foilVariation: null,
         },
       };
 
-      if (group.key?.length > 0) {
-        return group;
+      let res = baseGroup;
+      if (item.sockets?.filter((s) => s.group === 0).length === 6) {
+        const sixLinkGroup = {
+          ...res,
+          hashProperties: { ...res.hashProperties, sixLink: true },
+          parent: res,
+        };
+        res = sixLinkGroup;
       }
+
+      if (!!item.foilVariation) {
+        const foilGroup = {
+          ...res,
+          hashProperties: {
+            ...res.hashProperties,
+            foilVariation: item.foilVariation,
+          },
+          parent: res,
+        };
+        res = foilGroup;
+      }
+
+      if (!!item.corrupted) {
+        const corruptedMods =
+          item.implicitMods?.map((e) => e.replaceAll(/[0-9]+/g, "#")) ?? [];
+        corruptedMods.sort();
+        const corruptedGroup = {
+          ...res,
+          hashProperties: {
+            ...res.hashProperties,
+            corrupted: true,
+            corruptedMods: corruptedMods ?? [],
+          },
+          parent: res,
+        };
+        res = corruptedGroup;
+      }
+
+      return res;
     }
     return null;
   }

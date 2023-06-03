@@ -19,6 +19,8 @@ model ItemGroupInfo {
   inventoryMaxStackSize Int?
   displayName           String?
 
+  parentHashString String?
+
   createdAtTimestamp DateTime @default(now())
   updatedAtTimestamp DateTime @default(now())
 
