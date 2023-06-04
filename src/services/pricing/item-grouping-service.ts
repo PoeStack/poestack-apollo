@@ -6,6 +6,7 @@ import { type ItemGroupInfo } from "@prisma/client";
 import { Logger } from "../logger";
 import { PoeApiItem } from "../../gql/__generated__/resolvers-types";
 import { ItemUtils } from "../../utils/item-utils";
+import { LRUCache } from "lru-cache";
 
 @singleton()
 export default class ItemGroupingService {
@@ -13,6 +14,16 @@ export default class ItemGroupingService {
 
   private readonly itemGroupHashStringCache = new Set<string>();
   private itemGroupsToWrite = {};
+
+  //make a seperate method for this
+  private itemGroupCache = new LRUCache<string, ItemGroupInfo>({
+    maxSize: 10000,
+    sizeCalculation: (value, key) => {
+      return 1;
+    },
+    updateAgeOnGet: true,
+    updateAgeOnHas: true,
+  });
 
   constructor(private readonly postgresService: PostgresService) {
     this.pricingHandlers.push(
@@ -29,8 +40,7 @@ export default class ItemGroupingService {
       new MapGroupIdentifier(),
       new CompassGroupIdentifier(),
       new InucbatorGroupIdentifier(),
-      new CurrencyGroupIdentifier(),
-      new HelmEnchantGroupIdentifier()
+      new CurrencyGroupIdentifier()
     );
   }
 
@@ -235,9 +245,9 @@ export class UnqiueGearGroupIdentifier implements ItemGroupIdentifier {
         tag: "unique",
         hashProperties: {
           sixLink: false,
-          corrupted: null,
           corruptedMods: null,
           foilVariation: null,
+          enchantMods: null,
         },
       };
 
@@ -271,12 +281,31 @@ export class UnqiueGearGroupIdentifier implements ItemGroupIdentifier {
           ...res,
           hashProperties: {
             ...res.hashProperties,
-            corrupted: true,
-            corruptedMods: corruptedMods ?? [],
+            corruptedMods: corruptedMods.map((e) => e.toLowerCase()),
           },
           parent: res,
         };
         res = corruptedGroup;
+      }
+
+      const itemCategory = ItemUtils.decodeIcon(item.icon, 0);
+
+      if (itemCategory?.includes("helmet")) {
+        const mappedEnchantMods = (item.enchantMods ?? []).map((e) =>
+          e.toLowerCase()
+        );
+        mappedEnchantMods.sort();
+        if (mappedEnchantMods.length) {
+          const enchantedGroup = {
+            ...res,
+            hashProperties: {
+              ...res.hashProperties,
+              enchantMods: mappedEnchantMods,
+            },
+            parent: res,
+          };
+          res = enchantedGroup;
+        }
       }
 
       return res;
