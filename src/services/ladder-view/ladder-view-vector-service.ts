@@ -68,9 +68,11 @@ export class LadderViewVectorService {
 
     vector.push([
       snapshot.characterOpaqueKey,
+      apiFields.characterName,
+      apiFields.profileName,
       apiFields.level,
       rank,
-      
+
       pobFields.life,
       pobFields.energyShield,
       pobFields.accuracy,

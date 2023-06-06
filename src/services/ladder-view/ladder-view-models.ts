@@ -1,7 +1,8 @@
 import { PoeApiCharacter } from "@gql/resolvers-types";
 
 export interface LadderViewApiFields {
-  name?: string;
+  characterName?: string;
+  profileName?: string;
   weaponCategory?: string;
   experience?: number;
   totalValueChaos?: number;
@@ -19,6 +20,8 @@ export interface LadderViewApiFields {
   bandit?: string;
   pantheonMajor?: string;
   pantheonMinor?: string;
+
+  atlasSpecalizations?: string[];
 }
 
 export interface LadderViewPobFields {

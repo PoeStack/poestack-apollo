@@ -22,6 +22,12 @@ export default class PoePassiveTree {
     this.computeConnections();
   }
 
+  public findMasteryByGroup(group: number): GqlPassiveTreeNode | null {
+    return Object.values(this.nodeMap).find(
+      (e) => e.isMastery && e.group === group
+    );
+  }
+
   private computeGroups() {
     const groups = Object.keys(this.passiveTree.groups).map((groupId) => {
       const group = this.passiveTree.groups[groupId];

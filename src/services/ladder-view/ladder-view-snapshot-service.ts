@@ -19,6 +19,7 @@ import { LadderViewSnapshot, LadderViewApiFields } from "./ladder-view-models";
 import objectHash from "object-hash";
 import { Logger } from "../logger";
 import { ItemUtils } from "../../utils/item-utils";
+import { AtlasViewService } from "../atlas-view/atlas-view-service";
 
 @singleton()
 export class LadderViewSnapshotService {
@@ -29,7 +30,8 @@ export class LadderViewSnapshotService {
     private readonly passiveTreeService: PassiveTreeService,
     private readonly s3Service: S3Service,
     private readonly livePricingService: LivePricingService,
-    private readonly poeLeagueStartService: PoeLeagueStartService
+    private readonly poeLeagueStartService: PoeLeagueStartService,
+    private readonly atlasViewService: AtlasViewService
   ) {}
 
   private async takeSnapshotInternal(userId: string, characterId: string) {
@@ -37,6 +39,7 @@ export class LadderViewSnapshotService {
     if (ctx) {
       await this.mapCharacterData(ctx);
       if (!ctx.looted) {
+        await this.mapAtlas(ctx);
         this.generateHash(ctx);
         if (ctx.snapshotHash !== ctx.poeCharacter.ladderViewLastSnapshotHash) {
           await this.presistSnapshot(ctx);
@@ -56,6 +59,21 @@ export class LadderViewSnapshotService {
     }
   }
 
+  private async mapAtlas(ctx: LadderViewSnapshotContext) {
+    const snapshot = await this.atlasViewService.snapshot(
+      ctx.userProfile.userId,
+      ctx.poeApiCharacter.league
+    );
+
+    const atlasSpecalizations = Object.entries(snapshot.hashTypeCounts).filter(
+      ([type, count]) => count >= 3
+    );
+    atlasSpecalizations.sort((a, b) => b[1] - a[1]);
+    ctx.vectorFields.atlasSpecalizations = atlasSpecalizations.map(
+      ([type, count]) => type
+    );
+  }
+
   private generateHash(ctx: LadderViewSnapshotContext) {
     const hashFields = {
       hashVersion: "1",
@@ -63,6 +81,7 @@ export class LadderViewSnapshotService {
       items: ctx.items ?? [],
       passives: ctx.poeApiCharacter.passives,
       league: ctx.poeApiCharacter.league,
+      atlasSpecalizations: ctx.vectorFields.atlasSpecalizations,
     };
     const hash = objectHash(hashFields);
     ctx.snapshotHash = hash;
@@ -76,7 +95,8 @@ export class LadderViewSnapshotService {
     this.mapPassives(ctx);
 
     ctx.vectorFields.class = ctx.poeApiCharacter.class;
-    ctx.vectorFields.name = ctx.poeApiCharacter.name ?? "NA";
+    ctx.vectorFields.characterName = ctx.poeApiCharacter.name ?? "NA";
+    ctx.vectorFields.profileName = ctx.userProfile.poeProfileName ?? "NA";
     ctx.vectorFields.experience = ctx.poeApiCharacter.experience ?? 0;
     ctx.vectorFields.level = ctx.poeApiCharacter.level ?? 0;
 
