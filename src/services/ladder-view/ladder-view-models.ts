@@ -22,5 +22,5 @@ export interface LadderViewVectorFields {
 
 export interface LadderViewSnapshot {
   userOpaqueKey: string;
-  poeApiCharacter: PoeApiCharacter
+  poeApiCharacter: PoeApiCharacter;
 }

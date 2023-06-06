@@ -26,11 +26,12 @@ export class LadderViewVectorService {
     const apiFields: LadderViewVectorFields =
       snapshot.characterApiFields as any;
     dataVector.addVectorValues(vector, "allItemKeys", apiFields.allItemKeys);
-    dataVector.addVectorValues(vector, "allSkillKeys", apiFields.allSkillKeys);
+    dataVector.addVectorValues(vector, "skillKeys", apiFields.allSkillKeys);
     dataVector.addVectorValues(
       vector,
       "mainSkillKeys",
-      apiFields.mainSkillKeys
+      apiFields.mainSkillKeys,
+      "skillKeys"
     );
     dataVector.addVectorValues(vector, "keyStoneKeys", apiFields.keyStoneKeys);
     dataVector.addVectorValues(vector, "masteryKeys", apiFields.masteryKeys);
@@ -115,13 +116,6 @@ export class LadderViewVectorService {
         { entries: chunk }
       );
     }
-
-    await this.s3Service.putJson(
-      "poe-stack-ladder-view",
-      `v1/vectors/${league}/current.json`,
-      header
-    );
-    console.log(dataVector);
   }
 
   public async startJob() {
