@@ -399,10 +399,14 @@ export class LadderViewSnapshotService {
   }
 
   private async runSweep() {
-    const characters = await this.postgresService.prisma.poeCharacter.findMany({
-      where: { ladderViewNextSnapshotTimestamp: { lte: new Date() } },
-      take: 50,
-    });
+    const characters: { id: string; userId: string }[] = await this
+      .postgresService.prisma.$queryRaw`
+      select pc."userId", pc."id"  from "PoeCharacter" pc 
+      left join "UserProfile" up on up."userId"  = pc."userId" 
+      left join "TwitchStreamerProfile" tw on tw."userId"  = pc."userId" 
+      where pc."ladderViewNextSnapshotTimestamp" < now() at time zone 'utc' and (up."patreonTier" is not null or tw."userId" is not null)
+      order by random()
+      limit 50`;
 
     await this.postgresService.prisma.poeCharacter.updateMany({
       where: { id: { in: characters.map((e) => e.id) } },
