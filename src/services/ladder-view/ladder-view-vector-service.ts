@@ -25,25 +25,42 @@ export class LadderViewVectorService {
 
     const apiFields: LadderViewVectorFields =
       snapshot.characterApiFields as any;
-    dataVector.addVectorValues(vector, "allItemKeys", apiFields.allItemKeys);
-    dataVector.addVectorValues(vector, "skillKeys", apiFields.allSkillKeys);
+    dataVector.addVectorValues(vector, apiFields.allItemKeys, {
+      type: "allItemKeys",
+      storageIndex: 0,
+    });
+    dataVector.addVectorValues(vector, apiFields.allSkillKeys, {
+      type: "allSkillKeys",
+      storageIndex: 1,
+    });
+    dataVector.addVectorValues(vector, apiFields.mainSkillKeys, {
+      type: "mainSkillKeys",
+      storageIndex: 1,
+    });
+    dataVector.addVectorValues(vector, apiFields.keyStoneKeys, {
+      type: "keyStoneKeys",
+      storageIndex: 2,
+    });
+    dataVector.addVectorValues(vector, apiFields.masteryKeys, {
+      type: "masteryKeys",
+      storageIndex: 3,
+    });
     dataVector.addVectorValues(
       vector,
-      "mainSkillKeys",
-      apiFields.mainSkillKeys,
-      "skillKeys"
+      [
+        apiFields.pantheonMajor,
+        apiFields.pantheonMinor,
+        apiFields.enchant,
+        apiFields.weaponCategory,
+        apiFields.bandit,
+        entry.patreonTier,
+        entry.twitchProfileName,
+      ],
+      {
+        type: "general",
+        storageIndex: 4,
+      }
     );
-    dataVector.addVectorValues(vector, "keyStoneKeys", apiFields.keyStoneKeys);
-    dataVector.addVectorValues(vector, "masteryKeys", apiFields.masteryKeys);
-    dataVector.addVectorValues(vector, "general", [
-      apiFields.pantheonMajor,
-      apiFields.pantheonMinor,
-      apiFields.enchant,
-      apiFields.weaponCategory,
-      apiFields.bandit,
-      entry.patreonTier,
-      entry.twitchProfileName,
-    ]);
 
     //Don't put the chaos value in there it's too long, maybe split pages by rank instead of by level
 

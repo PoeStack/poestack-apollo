@@ -9,7 +9,6 @@ import {
   type GqlGenericAggregation,
 } from "../../models/basic-models";
 import _ from "lodash";
-import { Logger } from "../logger";
 
 @singleton()
 export default class AtlasPassiveSnapshotService {

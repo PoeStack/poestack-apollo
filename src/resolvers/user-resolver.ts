@@ -7,7 +7,6 @@ import { GqlUserProfile, GqlUserNotification } from "../models/basic-models";
 import { PoeStackContext } from "..";
 import DiscordService from "../services/discord-service";
 import { Logger } from "../services/logger";
-import CharacterSnapshotService from "../services/snapshot/character-snapshot-service";
 import TftOneClickService from "../services/tft/tft-one-click-service";
 import { UserProfile } from "@prisma/client";
 import { nanoid } from "nanoid";
@@ -21,7 +20,6 @@ export class UserResolver {
     private readonly postgresService: PostgresService,
     private readonly discordService: DiscordService,
     private readonly tftService: TftOneClickService,
-    private readonly characterSnapshotService: CharacterSnapshotService,
     private readonly patreonService: PatreonService
   ) {}
 
@@ -236,12 +234,6 @@ export class UserResolver {
         oAuthTokenUpdatedAtTimestamp: new Date(),
       },
     });
-
-    try {
-      await this.characterSnapshotService.updatePoeCharacters(userId);
-    } catch (error) {
-      Logger.error("error during initial load characters", error);
-    }
 
     const token = jwt.sign(
       {

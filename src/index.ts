@@ -25,15 +25,12 @@ import { ItemGroupResolver } from "./resolvers/item-group-resolver";
 import { Logger } from "./services/logger";
 import { LadderViewResolver } from "./resolvers/ladder-view-resolver";
 import { GlobalSearchResolver } from "./resolvers/global-search-resolver";
-import { CharacterSnapshotResolver } from "./resolvers/character-snapshot-resolver";
 import PobService from "./services/pob-service";
 import { PassiveTreeResolver } from "./resolvers/passive-tree-resolver";
 import { PassiveTreeService } from "./services/passive-tree/passive-tree-service";
-import CharacterSnapshotService from "./services/snapshot/character-snapshot-service";
 import { AtlasPassiveSnapshotResolve } from "./resolvers/atlas-passive-snapshot-resolver";
 import { CustomLadderGroupResolver } from "./resolvers/custom-ladder-group-resolver";
 import ItemGroupingService from "./services/pricing/item-grouping-service";
-import CharacterVectorService from "./services/snapshot/character-vector-service";
 import TftBlacklistService from "./services/tft/utils/tft-blacklist-service";
 import TftDiscordBotService from "./services/tft/tft-discord-bot-service";
 import { PoeStackResolver } from "./resolvers/poestack-resolver";
@@ -108,7 +105,6 @@ process
       UserResolver,
       ItemGroupResolver,
       GlobalSearchResolver,
-      CharacterSnapshotResolver,
       PassiveTreeResolver,
       AtlasPassiveSnapshotResolve,
       CustomLadderGroupResolver,
@@ -177,16 +173,6 @@ process
 
   if (process.env.START_LIVE_PRICING_HISTORY_JOB === "true") {
     container.resolve(LivePricingHistoryService).startBackgroundJob();
-  }
-
-  if (process.env.START_POB_BACKGROUND_JOB === "true") {
-    container
-      .resolve(CharacterSnapshotService)
-      .startCharacterSnapshotBackgroundJob();
-    container
-      .resolve(CharacterSnapshotService)
-      .startAtlasAndPoeCharacterBackgroundJob();
-    container.resolve(CharacterVectorService).startBackgroundJob();
   }
 
   if (process.env.START_STASH_VIEW_AUTOMATIC_SNAPSHOTS === "true") {

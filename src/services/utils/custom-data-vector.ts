@@ -1,30 +1,23 @@
 export class CustomDataVector {
-  output = { vectors: [], types: {}, values: {} };
+  output = { vectors: [], types: {}, values: {}, vectorMetadata: {} };
 
   public addVectorValues(
     vector: number[][],
-    type: string,
     values: any[],
-    storageType: string = null
+    config: { type: string; storageIndex: number }
   ) {
-    const typeIndex =
-      this.output.types[type] || Object.keys(this.output.types).length + 1;
-    this.output.types[type] = typeIndex;
+    this.output.vectorMetadata[vector.length] = {
+      type: config.type,
+      storageIndex: config.storageIndex,
+      index: vector.length,
+    };
 
-    if (!storageType && !this.output.values[typeIndex]) {
-      this.output.values[typeIndex] = {};
-    }
-
-    const out = [typeIndex];
-
-    const storageIndex = storageType
-      ? this.output.types[storageType]
-      : typeIndex;
+    const out = [];
     for (const value of values) {
       const valueIndex =
-        this.output.values[storageIndex][value] ||
-        Object.keys(this.output.values[storageIndex]).length + 1;
-      this.output.values[storageIndex][value] = valueIndex;
+        this.output.values[config.storageIndex][value] ||
+        Object.keys(this.output.values[config.storageIndex]).length + 1;
+      this.output.values[config.storageIndex][value] = valueIndex;
       out.push(valueIndex);
     }
 
