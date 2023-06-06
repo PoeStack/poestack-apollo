@@ -15,10 +15,7 @@ import { PassiveTreeService } from "../passive-tree/passive-tree-service";
 import PoeApi from "../poe/poe-api";
 import ItemGroupingService from "../pricing/item-grouping-service";
 import { S3Service } from "./../s3-service";
-import {
-  LadderViewSnapshot,
-  LadderViewVectorFields,
-} from "./ladder-view-models";
+import { LadderViewSnapshot, LadderViewApiFields } from "./ladder-view-models";
 import objectHash from "object-hash";
 import { Logger } from "../logger";
 import { ItemUtils } from "../../utils/item-utils";
@@ -61,6 +58,7 @@ export class LadderViewSnapshotService {
 
   private generateHash(ctx: LadderViewSnapshotContext) {
     const hashFields = {
+      hashVersion: "1",
       level: ctx.poeApiCharacter.level,
       items: ctx.items ?? [],
       passives: ctx.poeApiCharacter.passives,
@@ -74,21 +72,21 @@ export class LadderViewSnapshotService {
     ctx.vectorFields = {};
 
     await this.mapItems(ctx);
+    this.mapSkills(ctx);
+    this.mapPassives(ctx);
+
+    ctx.vectorFields.class = ctx.poeApiCharacter.class;
+    ctx.vectorFields.name = ctx.poeApiCharacter.name ?? "NA";
+    ctx.vectorFields.experience = ctx.poeApiCharacter.experience ?? 0;
+    ctx.vectorFields.level = ctx.poeApiCharacter.level ?? 0;
+
+    ctx.vectorFields.bandit = ctx.poeApiCharacter.passives?.bandit_choice;
+    ctx.vectorFields.pantheonMajor =
+      ctx.poeApiCharacter.passives?.pantheon_major;
+    ctx.vectorFields.pantheonMinor =
+      ctx.poeApiCharacter.passives?.pantheon_minor;
+
     this.detectLooted(ctx);
-    if (!ctx.looted) {
-      this.mapSkills(ctx);
-      this.mapPassives(ctx);
-
-      ctx.vectorFields.name = ctx.poeApiCharacter.name ?? "NA";
-      ctx.vectorFields.experience = ctx.poeApiCharacter.experience ?? 0;
-      ctx.vectorFields.level = ctx.poeApiCharacter.level ?? 0;
-
-      ctx.vectorFields.bandit = ctx.poeApiCharacter.passives?.bandit_choice;
-      ctx.vectorFields.pantheonMajor =
-        ctx.poeApiCharacter.passives?.pantheon_major;
-      ctx.vectorFields.pantheonMinor =
-        ctx.poeApiCharacter.passives?.pantheon_minor;
-    }
   }
 
   private mapPassives(ctx: LadderViewSnapshotContext) {
@@ -117,7 +115,9 @@ export class LadderViewSnapshotService {
   }
 
   private detectLooted(ctx: LadderViewSnapshotContext) {
-    ctx.looted = false;
+    if (!ctx.vectorFields.mainSkillKeys.length) {
+      ctx.looted = true;
+    }
   }
 
   private mapSkills(ctx: LadderViewSnapshotContext) {
@@ -167,8 +167,8 @@ export class LadderViewSnapshotService {
 
         const equipmentSupportCount =
           equipment?.explicitMods
-            .map((e) => e.toLowerCase())
-            .filter(
+            ?.map((e) => e.toLowerCase())
+            ?.filter(
               (e) =>
                 e.startsWith("socketed gems are supported by") ||
                 e.startsWith("socketed spells have") ||
@@ -390,6 +390,7 @@ export class LadderViewSnapshotService {
       userProfile: userProfile,
       poeCharacter: character,
       poeApiCharacter: characterData,
+      looted: false,
     };
     return ctx;
   }
@@ -441,7 +442,7 @@ export interface LadderViewSnapshotContext {
   };
   poeCharacter: PoeCharacter;
   poeApiCharacter: PoeApiCharacter;
-  vectorFields?: LadderViewVectorFields;
+  vectorFields?: LadderViewApiFields;
   snapshotHash?: string;
   looted?: boolean;
   items?: (PoeApiItem & { socketedInId?: string })[];

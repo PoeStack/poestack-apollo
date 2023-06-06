@@ -5,7 +5,7 @@ import PobService from "../../services/pob-service";
 import _ from "lodash";
 import { CustomDataVector } from "../../services/utils/custom-data-vector";
 import { LadderViewSnapshotRecord } from "@prisma/client";
-import { LadderViewVectorFields } from "./ladder-view-models";
+import { LadderViewApiFields, LadderViewPobFields } from "./ladder-view-models";
 
 @singleton()
 export class LadderViewVectorService {
@@ -23,8 +23,9 @@ export class LadderViewVectorService {
   ) {
     const vector = [];
 
-    const apiFields: LadderViewVectorFields =
-      snapshot.characterApiFields as any;
+    const apiFields: LadderViewApiFields = snapshot.characterApiFields as any;
+    const pobFields: LadderViewPobFields = snapshot.characterPobFields as any;
+
     dataVector.addVectorValues(vector, apiFields.allItemKeys, {
       type: "allItemKeys",
       storageIndex: 0,
@@ -55,6 +56,7 @@ export class LadderViewVectorService {
         apiFields.bandit,
         entry.patreonTier,
         entry.twitchProfileName,
+        apiFields.class,
       ],
       {
         type: "general",
@@ -64,7 +66,22 @@ export class LadderViewVectorService {
 
     //Don't put the chaos value in there it's too long, maybe split pages by rank instead of by level
 
-    vector.push(["r", snapshot.characterOpaqueKey, apiFields.level, rank]);
+    vector.push([
+      snapshot.characterOpaqueKey,
+      apiFields.level,
+      rank,
+      
+      pobFields.life,
+      pobFields.energyShield,
+      pobFields.accuracy,
+      pobFields.armour,
+      pobFields.evasion,
+      pobFields.dex,
+      pobFields.int,
+      pobFields.str,
+      pobFields.combinedDPS,
+      pobFields.ward,
+    ]);
 
     dataVector.output.vectors.push(vector);
   }
@@ -122,7 +139,10 @@ export class LadderViewVectorService {
     await this.s3Service.putJson(
       "poe-stack-ladder-view",
       `v1/vectors/${league}/vectors/${timestamp.toISOString()}/values.json`,
-      { types: dataVector.output.types, values: dataVector.output.values }
+      {
+        metadata: dataVector.output.metadata,
+        values: dataVector.output.values,
+      }
     );
 
     let index = 0;
