@@ -60,6 +60,9 @@ export default class StashViewSnapshotService {
       totalValues: { fixedValue: 0, lpValue: 0, lpStockValue: 0 },
     };
 
+
+
+
     const lastSnapshotRecord =
       await this.postgresService.prisma.stashViewSnapshotRecord.findFirst({
         where: { userId: config.userId, league: config.league },

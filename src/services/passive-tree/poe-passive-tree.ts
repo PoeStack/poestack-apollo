@@ -4,6 +4,7 @@ import {
   type GqlPassiveTreeConnection,
 } from "../../models/skill-tree-models";
 import fs from "fs";
+import fetch from "node-fetch";
 
 export default class PoePassiveTree {
   private readonly passiveTree: any;
@@ -162,6 +163,7 @@ export default class PoePassiveTree {
   public getNode(hash: string): GqlPassiveTreeNode | undefined {
     return this.nodeMap[hash];
   }
+
 
   public getResponse() {
     if (this.cachedResponse) {

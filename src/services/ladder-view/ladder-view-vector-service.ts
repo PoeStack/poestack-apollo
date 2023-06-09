@@ -46,6 +46,27 @@ export class LadderViewVectorService {
       type: "masteryKeys",
       storageIndex: 3,
     });
+    dataVector.addVectorValues(vector, apiFields.topAtlasNodeTypes, {
+      type: "topAtlasNodeTypes",
+      storageIndex: 5,
+    });
+    dataVector.addVectorValues(
+      vector,
+      apiFields.topItems.map((e) => e.icon),
+      {
+        type: "topItemIcons",
+        storageIndex: 7,
+      }
+    );
+    dataVector.addVectorValues(
+      vector,
+      apiFields.topItems.map((e) => e.name),
+      {
+        type: "topItemNames",
+        storageIndex: 6,
+      }
+    );
+
     dataVector.addVectorValues(
       vector,
       [

@@ -65,23 +65,47 @@ export class LadderViewSnapshotService {
       ctx.poeApiCharacter.league
     );
 
-    const atlasSpecalizations = Object.entries(snapshot.hashTypeCounts).filter(
-      ([type, count]) => count >= 3
+    const validNodes = [
+      "abyss",
+      "blight",
+      "delve",
+      "incursion",
+      "strongboxes",
+      "essence",
+      "betrayal",
+      "harbinger",
+      "metamorph",
+      "shrines",
+      "delirium",
+      "breach",
+      "bestiary",
+      "legion",
+      "heist",
+      "expedition",
+      "harvest",
+      "ritual",
+      "rogue exiles",
+    ];
+
+    const atlasNodeTypes = Object.entries(snapshot.hashTypeCounts).filter(
+      ([type, count]: [string, number]) =>
+        count >= 3 && validNodes.includes(type)
     );
-    atlasSpecalizations.sort((a, b) => b[1] - a[1]);
-    ctx.vectorFields.atlasSpecalizations = atlasSpecalizations.map(
-      ([type, count]) => type
+    atlasNodeTypes.sort(
+      (a: [string, number], b: [string, number]) => b[1] - a[1]
     );
+    ctx.vectorFields.topAtlasNodeTypes = atlasNodeTypes
+      .map(([type]) => type)
+      .slice(0, 4);
   }
 
   private generateHash(ctx: LadderViewSnapshotContext) {
     const hashFields = {
-      hashVersion: "1",
+      hashVersion: "2",
       level: ctx.poeApiCharacter.level,
       items: ctx.items ?? [],
       passives: ctx.poeApiCharacter.passives,
       league: ctx.poeApiCharacter.league,
-      atlasSpecalizations: ctx.vectorFields.atlasSpecalizations,
     };
     const hash = objectHash(hashFields);
     ctx.snapshotHash = hash;
@@ -304,6 +328,14 @@ export class LadderViewSnapshotService {
       .filter((e) => e.frameType == 3 || e.frameType == 10)
       .map((e) => e.name?.toLowerCase())
       .filter((e) => !!e);
+
+    const trackedItems = allItems.filter(
+      (e) => !!e["fixedValue"] && !!e.name && [3, 10].includes(e.frameType)
+    );
+    trackedItems.sort((a, b) => b["fixedValue"] - a["fixedValue"]);
+    ctx.vectorFields.topItems = trackedItems
+      .slice(0, 4)
+      .map((e) => ({ name: e.name.toLowerCase(), icon: e.icon }));
   }
 
   private async presistSnapshot(ctx: LadderViewSnapshotContext) {

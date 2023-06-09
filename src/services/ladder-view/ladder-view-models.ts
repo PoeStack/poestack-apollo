@@ -21,7 +21,8 @@ export interface LadderViewApiFields {
   pantheonMajor?: string;
   pantheonMinor?: string;
 
-  atlasSpecalizations?: string[];
+  topAtlasNodeTypes?: string[];
+  topItems?: { name: string; icon: string }[];
 }
 
 export interface LadderViewPobFields {
