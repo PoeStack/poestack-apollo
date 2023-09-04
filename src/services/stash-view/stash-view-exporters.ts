@@ -302,9 +302,9 @@ export class StashViewExporters {
       );
     }
 
-    const header = `WTS ${stashSettings.league}\nIGN ${
+    const header = `WTS ${stashSettings.league}\nIGN \`${
       stashSettings.ign
-    }\nPoeStack Price: ${Math.round(
+    }\`\nPoeStack Price: ${Math.round(
       totalValue
     )} :chaos: (${StashViewExporters.chaosToDivPlusChaos(
       stashSettings.chaosToDivRate!,
