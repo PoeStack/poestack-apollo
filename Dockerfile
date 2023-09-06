@@ -2,8 +2,8 @@ FROM --platform=linux/amd64 node:18 as deps
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN yarn install
+COPY package.json yarn.lock ./
+RUN yarn --frozen-lockfile
 
 COPY pob ./pob
 
