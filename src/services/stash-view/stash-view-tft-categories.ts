@@ -123,6 +123,11 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     export: StashViewExporters.exportTftGenericBulk,
     channels: { Ancestor: { channelId: "882251982830731315", timeout: 900 } },
   },
+  "breach": {
+    tags: ["delirium orb"],
+    export: StashViewExporters.exportTftGenericBulk,
+    channels: { Ancestor: { channelId: "874671016100659280", timeout: 900 } },
+  },
   logbooks: {
     tags: ["logbook"],
     enableOverrides: true,
