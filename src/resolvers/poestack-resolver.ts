@@ -14,11 +14,11 @@ export class PoeStackResolver {
   public async poestackStats(@Ctx() ctx: PoeStackContext) {
     const stats: any = {};
 
-    stats.users = /* await this.postgresService.prisma.userProfile.count(); */ 98356;
-    stats.poeCharacters = /* await this.postgresService.prisma.poeCharacter.count() */ 1123078;
-    stats.items = await this.postgresService.prisma.itemGroupInfo.count();
+    stats.users = /* await this.postgresService.prisma.userProfile.count(); */ 95473;
+    stats.poeCharacters = /* await this.postgresService.prisma.poeCharacter.count() */ 1045942;
+    stats.items = /* await this.postgresService.prisma.itemGroupInfo.count(); */ 243219;
     stats.oneClickMessages =
-      await this.postgresService.prisma.oneClickMessageHistory.count();
+      /* await this.postgresService.prisma.oneClickMessageHistory.count(); */ 703567
 
     return stats;
   }
