@@ -28,6 +28,7 @@ export default class ItemGroupingService {
   constructor(private readonly postgresService: PostgresService) {
     this.pricingHandlers.push(
       new WatchersEyeGroupIdentifier(),
+      new TattooGroupIdentifier(),
       new BloodFilledVesselGroupIdentifier(),
       new UnqiueGearGroupIdentifier(),
       new BeastGroupIdentifier(),
@@ -179,6 +180,20 @@ export class WatchersEyeGroupIdentifier implements ItemGroupIdentifier {
         hashProperties: {
           ilvl,
         },
+      };
+      return group;
+    }
+    return null;
+  }
+}
+
+export class TattooGroupIdentifier implements ItemGroupIdentifier {
+  group(item: PoeApiItem): InternalGroup {
+    if (item.baseType?.toLowerCase().startsWith("tattoo of the")) {
+      const group: InternalGroup = {
+        key: item.baseType?.toLowerCase().replace("tattoo of the", ""),
+        tag: "tattoo",
+        hashProperties: {},
       };
       return group;
     }
