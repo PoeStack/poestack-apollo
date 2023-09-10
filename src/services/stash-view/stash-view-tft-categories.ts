@@ -14,7 +14,7 @@ export interface TftCategory {
 }
 
 export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
-  "compasses (4/16 uses)": {
+  "compasses": {
     tags: ["compass"],
     export: StashViewExporters.exportTftCompassesBulk,
     enableOverrides: true,
