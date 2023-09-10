@@ -73,6 +73,15 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
       },
     },
   },
+  currency: {
+    tags: ["currency"],
+    export: StashViewExporters.exportTftGenericBulk,
+    channels: {
+      Ancestor: {
+        channelId: "904002942884003870", timeout: 900,
+      },
+    }
+  },
   beast: {
     tags: ["beast"],
     enableOverrides: true,
