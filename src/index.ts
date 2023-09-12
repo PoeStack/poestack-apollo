@@ -142,6 +142,11 @@ process
     })
   );
 
+  app.post("/webhooks/patreon", express.json(), (req, res) => {
+    Logger.info(`patreon webhook request ${JSON.stringify(req.body)}`);
+    res.status(500).send("Wait");
+  });
+
   container.resolve(PassiveTreeService).load();
 
   Logger.info("starting in dev : " + process.env.DEV);
