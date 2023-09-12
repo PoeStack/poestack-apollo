@@ -9,47 +9,11 @@ CREATE TABLE "ItemGroupInfo" (
     "icon" TEXT,
     "inventoryMaxStackSize" INTEGER,
     "displayName" TEXT,
+    "parentHashString" TEXT,
     "createdAtTimestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAtTimestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "ItemGroupInfo_pkey" PRIMARY KEY ("hashString")
-);
-
--- CreateTable
-CREATE TABLE "ItemGroupPValue" (
-    "hashString" TEXT NOT NULL,
-    "league" TEXT NOT NULL DEFAULT 'NA',
-    "type" TEXT NOT NULL,
-    "value" DOUBLE PRECISION NOT NULL,
-    "stockRangeStartInclusive" INTEGER NOT NULL,
-    "updatedAtTimestamp" TIMESTAMP(3) NOT NULL,
-    "lookbackWindowUsedHours" INTEGER NOT NULL DEFAULT 48,
-
-    CONSTRAINT "ItemGroupPValue_pkey" PRIMARY KEY ("hashString","type","stockRangeStartInclusive","league")
-);
-
--- CreateTable
-CREATE TABLE "ItemGroupPValueHourlyTimeseriesEntry" (
-    "hashString" TEXT NOT NULL,
-    "league" TEXT NOT NULL DEFAULT 'NA',
-    "type" TEXT NOT NULL,
-    "value" DOUBLE PRECISION NOT NULL,
-    "stockRangeStartInclusive" INTEGER NOT NULL,
-    "timestamp" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "ItemGroupPValueHourlyTimeseriesEntry_pkey" PRIMARY KEY ("hashString","type","stockRangeStartInclusive","timestamp","league")
-);
-
--- CreateTable
-CREATE TABLE "ItemGroupPValueDailyTimeseriesEntry" (
-    "hashString" TEXT NOT NULL,
-    "league" TEXT NOT NULL DEFAULT 'NA',
-    "type" TEXT NOT NULL,
-    "value" DOUBLE PRECISION NOT NULL,
-    "stockRangeStartInclusive" INTEGER NOT NULL,
-    "timestamp" TIMESTAMP(3) NOT NULL,
-
-    CONSTRAINT "ItemGroupPValueDailyTimeseriesEntry_pkey" PRIMARY KEY ("hashString","type","stockRangeStartInclusive","timestamp","league")
 );
 
 -- CreateTable
@@ -91,6 +55,7 @@ CREATE TABLE "UserProfile" (
     "patreonTier" TEXT,
     "patreonUpdatedAtTimestamp" TIMESTAMP(3),
     "roles" TEXT[] DEFAULT ARRAY[]::TEXT[],
+    "preferences" JSONB NOT NULL DEFAULT '{}',
 
     CONSTRAINT "UserProfile_pkey" PRIMARY KEY ("userId")
 );
@@ -138,7 +103,9 @@ CREATE TABLE "PoeCharacter" (
     "lastLeague" TEXT,
     "lastLevel" INTEGER NOT NULL DEFAULT 0,
     "lastLevelChangeTimestamp" TIMESTAMP(3),
-    "ladderViewNextSnapshotTimestamp" TIMESTAMP(3),
+    "ladderViewNextSnapshotTimestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "ladderViewLastSnapshotHash" TEXT,
+    "ladderViewLastSnapshotHashUpdateTimestamp" TIMESTAMP(3),
     "lastSnapshotTimestamp" TIMESTAMP(3),
     "lastSnapshotHash" TEXT,
     "lastSnapshotHashUpdateTimestamp" TIMESTAMP(3),
@@ -210,19 +177,6 @@ CREATE TABLE "CustomLadderGroup" (
 );
 
 -- CreateTable
-CREATE TABLE "DiscordServiceMessageRecord" (
-    "messageId" TEXT NOT NULL,
-    "guildId" TEXT NOT NULL,
-    "channelId" TEXT NOT NULL,
-    "senderDiscordId" TEXT NOT NULL,
-    "timestamp" TIMESTAMP(3) NOT NULL,
-    "type" TEXT NOT NULL,
-    "properties" JSONB NOT NULL,
-
-    CONSTRAINT "DiscordServiceMessageRecord_pkey" PRIMARY KEY ("messageId")
-);
-
--- CreateTable
 CREATE TABLE "OneClickMessageHistory" (
     "messageId" TEXT NOT NULL,
     "channelId" TEXT NOT NULL,
@@ -251,7 +205,8 @@ CREATE TABLE "StashViewValueSnapshot" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
     "league" TEXT NOT NULL,
-    "stashId" TEXT NOT NULL,
+    "type" TEXT NOT NULL DEFAULT 'tab value',
+    "stashId" TEXT,
     "timestamp" TIMESTAMP(3) NOT NULL,
     "value" DOUBLE PRECISION NOT NULL,
     "lpValue" DOUBLE PRECISION,
@@ -313,7 +268,7 @@ CREATE TABLE "LivePricingHistoryHourEntry" (
     "minQuantityInclusive" INTEGER NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL,
 
-    CONSTRAINT "LivePricingHistoryHourEntry_pkey" PRIMARY KEY ("itemGroupHashString","league","type","minQuantityInclusive","timestamp")
+    CONSTRAINT "LivePricingHistoryHourEntry2_pkey" PRIMARY KEY ("itemGroupHashString","league","type","minQuantityInclusive","timestamp")
 );
 
 -- CreateTable
@@ -352,27 +307,47 @@ CREATE TABLE "UserNotification" (
 );
 
 -- CreateTable
-CREATE TABLE "LadderViewSnapshotRecord" (
-    "userId" TEXT NOT NULL,
-    "characterId" TEXT NOT NULL,
+CREATE TABLE "LadderViewVectorRecord" (
+    "league" TEXT NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL,
-    "snapshotHashString" TEXT NOT NULL,
-    "lastestSnapshot" BOOLEAN NOT NULL,
-    "snapshotStatus" TEXT NOT NULL,
-    "pobShardKey" INTEGER NOT NULL,
 
-    CONSTRAINT "LadderViewSnapshotRecord_pkey" PRIMARY KEY ("userId","characterId","timestamp")
+    CONSTRAINT "LadderViewVectorRecord_pkey" PRIMARY KEY ("league","timestamp")
 );
 
 -- CreateTable
-CREATE TABLE "LadderViewSnapshotVectorSummary" (
+CREATE TABLE "LadderViewSnapshotRecord" (
     "userId" TEXT NOT NULL,
-    "characterId" TEXT NOT NULL,
+    "characterOpaqueKey" TEXT NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL,
+    "league" TEXT NOT NULL,
+    "snapshotHashString" TEXT NOT NULL,
+    "snapshotStatus" TEXT NOT NULL,
+    "mostRecentSnapshot" BOOLEAN NOT NULL,
     "characterApiFields" JSONB NOT NULL,
     "characterPobFields" JSONB NOT NULL,
+    "lockKey" TEXT,
+    "lockTimestamp" TIMESTAMP(3),
 
-    CONSTRAINT "LadderViewSnapshotVectorSummary_pkey" PRIMARY KEY ("userId","characterId")
+    CONSTRAINT "LadderViewSnapshotRecord_pkey" PRIMARY KEY ("userId","characterOpaqueKey","timestamp")
+);
+
+-- CreateTable
+CREATE TABLE "AtlasViewSnapshot" (
+    "userId" TEXT NOT NULL,
+    "league" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "hashes" TEXT[],
+    "hashTypeCounts" JSONB NOT NULL,
+
+    CONSTRAINT "AtlasViewSnapshot_pkey" PRIMARY KEY ("userId","league")
+);
+
+-- CreateTable
+CREATE TABLE "PoeLeagueStartRecord" (
+    "league" TEXT NOT NULL,
+    "timestamp" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PoeLeagueStartRecord_pkey" PRIMARY KEY ("league")
 );
 
 -- CreateIndex
@@ -383,42 +358,6 @@ CREATE INDEX "ItemGroupInfo_key_idx" ON "ItemGroupInfo"("key");
 
 -- CreateIndex
 CREATE INDEX "ItemGroupInfo_tag_idx" ON "ItemGroupInfo"("tag");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValue_hashString_idx" ON "ItemGroupPValue"("hashString");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValue_updatedAtTimestamp_idx" ON "ItemGroupPValue"("updatedAtTimestamp");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValue_type_idx" ON "ItemGroupPValue"("type");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValue_stockRangeStartInclusive_idx" ON "ItemGroupPValue"("stockRangeStartInclusive");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueHourlyTimeseriesEntry_hashString_idx" ON "ItemGroupPValueHourlyTimeseriesEntry"("hashString");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueHourlyTimeseriesEntry_timestamp_idx" ON "ItemGroupPValueHourlyTimeseriesEntry"("timestamp");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueHourlyTimeseriesEntry_type_idx" ON "ItemGroupPValueHourlyTimeseriesEntry"("type");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueHourlyTimeseriesEntry_stockRangeStartInclusi_idx" ON "ItemGroupPValueHourlyTimeseriesEntry"("stockRangeStartInclusive");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueDailyTimeseriesEntry_hashString_idx" ON "ItemGroupPValueDailyTimeseriesEntry"("hashString");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueDailyTimeseriesEntry_timestamp_idx" ON "ItemGroupPValueDailyTimeseriesEntry"("timestamp");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueDailyTimeseriesEntry_type_idx" ON "ItemGroupPValueDailyTimeseriesEntry"("type");
-
--- CreateIndex
-CREATE INDEX "ItemGroupPValueDailyTimeseriesEntry_stockRangeStartInclusiv_idx" ON "ItemGroupPValueDailyTimeseriesEntry"("stockRangeStartInclusive");
 
 -- CreateIndex
 CREATE INDEX "PoeLiveListing_league_idx" ON "PoeLiveListing"("league");
@@ -514,10 +453,10 @@ CREATE INDEX "StashViewValueSnapshot_userId_idx" ON "StashViewValueSnapshot"("us
 CREATE INDEX "StashViewSnapshotRecord_userId_idx" ON "StashViewSnapshotRecord"("userId");
 
 -- CreateIndex
-CREATE INDEX "LivePricingHistoryHourEntry_itemGroupHashString_idx" ON "LivePricingHistoryHourEntry"("itemGroupHashString");
+CREATE INDEX "LivePricingHistoryHourEntry2_itemGroupHashString_idx" ON "LivePricingHistoryHourEntry"("itemGroupHashString");
 
 -- CreateIndex
-CREATE INDEX "LivePricingHistoryHourEntry_timestamp_idx" ON "LivePricingHistoryHourEntry"("timestamp");
+CREATE INDEX "LivePricingHistoryHourEntry2_timestamp_idx" ON "LivePricingHistoryHourEntry"("timestamp");
 
 -- CreateIndex
 CREATE INDEX "LivePricingHistoryDayEntry_itemGroupHashString_idx" ON "LivePricingHistoryDayEntry"("itemGroupHashString");
@@ -529,13 +468,7 @@ CREATE INDEX "LivePricingHistoryDayEntry_timestamp_idx" ON "LivePricingHistoryDa
 CREATE INDEX "LadderViewSnapshotRecord_userId_idx" ON "LadderViewSnapshotRecord"("userId");
 
 -- CreateIndex
-CREATE INDEX "LadderViewSnapshotRecord_characterId_idx" ON "LadderViewSnapshotRecord"("characterId");
-
--- CreateIndex
-CREATE INDEX "LadderViewSnapshotVectorSummary_userId_idx" ON "LadderViewSnapshotVectorSummary"("userId");
-
--- CreateIndex
-CREATE INDEX "LadderViewSnapshotVectorSummary_characterId_idx" ON "LadderViewSnapshotVectorSummary"("characterId");
+CREATE INDEX "LadderViewSnapshotRecord_characterOpaqueKey_idx" ON "LadderViewSnapshotRecord"("characterOpaqueKey");
 
 -- AddForeignKey
 ALTER TABLE "TwitchStreamerProfile" ADD CONSTRAINT "TwitchStreamerProfile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "UserProfile"("userId") ON DELETE CASCADE ON UPDATE CASCADE;

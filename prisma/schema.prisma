@@ -258,6 +258,7 @@ model StashViewValueSnapshot {
   fixedValue   Float?
 
   @@index([userId])
+  @@index([userId, league])
 }
 
 model StashViewSnapshotRecord {
