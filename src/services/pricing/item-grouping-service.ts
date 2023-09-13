@@ -28,6 +28,7 @@ export default class ItemGroupingService {
   constructor(private readonly postgresService: PostgresService) {
     this.pricingHandlers.push(
       new WatchersEyeGroupIdentifier(),
+      new TimelessJewelGroupIdentifier(),
       new TattooGroupIdentifier(),
       new BloodFilledVesselGroupIdentifier(),
       new UnqiueGearGroupIdentifier(),
@@ -163,6 +164,25 @@ interface InternalGroup {
 
 export interface ItemGroupIdentifier {
   group: (item: PoeApiItem) => InternalGroup;
+}
+
+export class TimelessJewelGroupIdentifier implements ItemGroupIdentifier {
+  group(item: PoeApiItem): InternalGroup {
+    if (
+      item.typeLine?.toLowerCase().includes("timeless jewel") &&
+      item.identified
+    ) {
+      const group: InternalGroup = {
+        key: item.typeLine?.toLowerCase().replaceAll("timeless jewel", ""),
+        tag: "timeless jewel",
+        hashProperties: {
+          mods: item.explicitMods,
+        },
+      };
+      return group;
+    }
+    return null;
+  }
 }
 
 export class WatchersEyeGroupIdentifier implements ItemGroupIdentifier {
