@@ -209,7 +209,7 @@ export class WatchersEyeGroupIdentifier implements ItemGroupIdentifier {
 }
 export class TomeGroupIdentifier implements ItemGroupIdentifier {
   group(item: PoeApiItem): InternalGroup {
-    if (item.baseType?.toLowerCase() === "forbidden tome" && !item.identified) {
+    if (item.baseType?.toLowerCase() === "forbidden tome" && item.identified) {
       const ilvl = item["ilvl"] ?? item.itemLevel;
       const group: InternalGroup = {
         key: "forbidden tome",
