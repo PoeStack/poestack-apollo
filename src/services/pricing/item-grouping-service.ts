@@ -32,6 +32,7 @@ export default class ItemGroupingService {
       new TattooGroupIdentifier(),
       new BloodFilledVesselGroupIdentifier(),
       new UnqiueGearGroupIdentifier(),
+      new TomeGroupIdentifier(),
       new BeastGroupIdentifier(),
       new MemoryGroupIdentifier(),
       new HeistBlueprintsGroupIdentifier(),
@@ -197,6 +198,22 @@ export class WatchersEyeGroupIdentifier implements ItemGroupIdentifier {
       const group: InternalGroup = {
         key: "unidentified watcher's eye",
         tag: "unique",
+        hashProperties: {
+          ilvl,
+        },
+      };
+      return group;
+    }
+    return null;
+  }
+}
+export class TomeGroupIdentifier implements ItemGroupIdentifier {
+  group(item: PoeApiItem): InternalGroup {
+    if (item.baseType?.toLowerCase() === "forbidden tome" && !item.identified) {
+      const ilvl = item["ilvl"] ?? item.itemLevel;
+      const group: InternalGroup = {
+        key: "forbidden tome",
+        tag: "forbidden tome",
         hashProperties: {
           ilvl,
         },
