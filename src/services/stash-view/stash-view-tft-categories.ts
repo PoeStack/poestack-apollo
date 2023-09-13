@@ -127,6 +127,11 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     export: StashViewExporters.exportTftGenericBulk,
     channels: { Ancestor: { channelId: "882247835188346951", timeout: 900 } },
   },
+  tattoos: {
+    tags: ["tattoo"],
+    export: StashViewExporters.exportTftGenericBulk,
+    channels: { Ancestor: { channelId: "1144748831670546542", timeout: 900 } },
+  },
   "delirium orbs": {
     tags: ["delirium orb"],
     export: StashViewExporters.exportTftGenericBulk,
