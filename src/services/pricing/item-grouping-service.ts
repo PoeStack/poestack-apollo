@@ -173,7 +173,7 @@ export class TimelessJewelGroupIdentifier implements ItemGroupIdentifier {
       item.identified
     ) {
       const group: InternalGroup = {
-        key: item.typeLine?.toLowerCase().replaceAll("timeless jewel", ""),
+        key: item.baseType?.toLowerCase(),
         tag: "timeless jewel",
         hashProperties: {
           mods: item.explicitMods,
