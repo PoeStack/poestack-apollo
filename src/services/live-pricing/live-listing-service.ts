@@ -48,7 +48,7 @@ export default class LiveListingService {
     this.cacheStats.misses++;
     const liveListings = await this.fetchListingsInternal(search);
     this.listingsCache.set(cacheKey, liveListings, {
-      ttl: GeneralUtils.random(1000 * 60 * 15, 1000 * 60 * 40),
+      ttl: GeneralUtils.random(1000 * 60 * 30, 1000 * 60 * 60),
     });
 
     return liveListings;
