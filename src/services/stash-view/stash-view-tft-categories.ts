@@ -14,7 +14,7 @@ export interface TftCategory {
 }
 
 export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
-  "compasses": {
+  compasses: {
     tags: ["compass"],
     export: StashViewExporters.exportTftCompassesBulk,
     enableOverrides: true,
@@ -78,9 +78,10 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     export: StashViewExporters.exportTftGenericBulk,
     channels: {
       Ancestor: {
-        channelId: "904002942884003870", timeout: 900,
+        channelId: "904002942884003870",
+        timeout: 900,
       },
-    }
+    },
   },
   beast: {
     tags: ["beast"],
@@ -99,8 +100,13 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
       },
     },
   },
-  fossils: {
+  fossil: {
     tags: ["fossil"],
+    export: StashViewExporters.exportTftGenericBulk,
+    channels: { Ancestor: { channelId: "874663081400209499", timeout: 900 } },
+  },
+  delve: {
+    tags: ["fossil", "resonator"],
     export: StashViewExporters.exportTftGenericBulk,
     channels: { Ancestor: { channelId: "874663081400209499", timeout: 900 } },
   },
@@ -137,7 +143,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     export: StashViewExporters.exportTftGenericBulk,
     channels: { Ancestor: { channelId: "882251982830731315", timeout: 900 } },
   },
-  "breach": {
+  breach: {
     tags: ["breach"],
     export: StashViewExporters.exportTftGenericBulk,
     channels: { Ancestor: { channelId: "874671016100659280", timeout: 900 } },
