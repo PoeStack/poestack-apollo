@@ -1198,6 +1198,7 @@ export class CurrencyGroupIdentifier implements ItemGroupIdentifier {
         "the whiteout",
         "heterochromia",
         "the gladiator",
+        "the fortunate",
         "endless night",
         "the traitor",
         "the aesthete",
