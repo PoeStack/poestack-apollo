@@ -1,10 +1,12 @@
+import fs from "fs";
 import { PoeStackContext } from "index";
 import {
   GqlStashViewAutomaticSnapshotSettings,
   GqlTftLiveListing,
-  GqlTftLiveListingSearch,
+  GqlTftLiveListingSearch
 } from "../models/basic-models";
 import PostgresService from "../services/mongo/postgres-service";
+import TftDiscordBotService from "services/tft/tft-discord-bot-service";
 import { singleton } from "tsyringe";
 import { Arg, Ctx, Query, Resolver } from "type-graphql";
 import { Prisma } from "@prisma/client";
@@ -12,7 +14,11 @@ import { Prisma } from "@prisma/client";
 @Resolver()
 @singleton()
 export class TftLiveListingsResolver {
-  constructor(private readonly postgresService: PostgresService) {}
+
+  constructor(
+    private readonly postgresService: PostgresService
+  ) {
+  }
 
   @Query(() => [GqlTftLiveListing])
   async tftLiveListings(@Ctx() ctx: PoeStackContext) {
@@ -20,15 +26,26 @@ export class TftLiveListingsResolver {
       throw new Error("Not authorized.");
     }
 
+    const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
+      { where: { userId: ctx.userId } }
+    );
+
+    if (!user) {
+      throw new Error(`User ${ctx.userId} not found.`);
+    }
+
+    if (user.tftRestricted) {
+      throw new Error(`User ${ctx.userId} is restricted on TFT.`);
+    }
 
     const tftLiveListings =
       await this.postgresService.prisma.tftLiveListing.findMany({
         where: {
           tag: "five-way",
           delistedAtTimestamp: null,
-          updatedAtTimestamp: { gte: new Date(Date.now() - 1000 * 60 * 15) },
+          updatedAtTimestamp: { gte: new Date(Date.now() - 1000 * 60 * 15) }
         },
-        orderBy: { updatedAtTimestamp: "desc" },
+        orderBy: { updatedAtTimestamp: "desc" }
       });
     return tftLiveListings;
   }
@@ -43,7 +60,7 @@ export class TftLiveListingsResolver {
     }
 
     const globalSearchConditions: Prisma.Sql[] = [
-      Prisma.sql`tll."tag" = ${search.tag} and tll."updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '30 mins'`,
+      Prisma.sql`tll."tag" = ${search.tag} and tll."updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '30 mins'`
     ];
 
     for (const filterGroup of search.propertyFilterGroups) {
@@ -67,9 +84,10 @@ export class TftLiveListingsResolver {
     )}`;
 
     const tftLiveListings = await this.postgresService.prisma.$queryRaw`
-    select * from "TftLiveListing" tll
-    ${where}
-    order by tll."updatedAtTimestamp" desc`;
+        select *
+        from "TftLiveListing" tll
+            ${where}
+        order by tll."updatedAtTimestamp" desc`;
     return tftLiveListings;
   }
 }

@@ -111,6 +111,7 @@ export class TftChannelParserService {
           userDiscordDisplayRole: listing?.userDiscordDisplayRole,
           userDiscordDisplayRoleColor: listing?.userDiscordDisplayRoleColor,
           userDiscordHighestRole: listing?.userDiscordHighestRole,
+          userDiscordName: listing.userDiscordName,
           delistedAtTimestamp: null,
           messageId: messageId,
         },
