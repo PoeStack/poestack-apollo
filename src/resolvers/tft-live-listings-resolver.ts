@@ -1,3 +1,4 @@
+import fs from "fs";
 import { PoeStackContext } from "index";
 import {
   GqlStashViewAutomaticSnapshotSettings,
@@ -5,14 +6,25 @@ import {
   GqlTftLiveListingSearch,
 } from "../models/basic-models";
 import PostgresService from "../services/mongo/postgres-service";
+import TftDiscordBotService from "services/tft/tft-discord-bot-service";
 import { singleton } from "tsyringe";
 import { Arg, Ctx, Query, Resolver } from "type-graphql";
 import { Prisma } from "@prisma/client";
+import { TftDiscordServerConfig } from "services/tft/tft-one-click-service";
 
 @Resolver()
 @singleton()
 export class TftLiveListingsResolver {
-  constructor(private readonly postgresService: PostgresService) {}
+  private config: TftDiscordServerConfig;
+
+  constructor(
+    private readonly postgresService: PostgresService,
+    private discordBotService: TftDiscordBotService,
+  ) {
+    this.config = JSON.parse(
+      fs.readFileSync("data/tft/discord-bulk-listing-config.json").toString()
+    );
+  }
 
   @Query(() => [GqlTftLiveListing])
   async tftLiveListings(@Ctx() ctx: PoeStackContext) {
@@ -20,6 +32,33 @@ export class TftLiveListingsResolver {
       throw new Error("Not authorized.");
     }
 
+    const user = await this.postgresService.prisma.userProfile.findFirstOrThrow(
+      { where: { userId: ctx.userId } }
+    );
+
+    if (!user) {
+      throw new Error(`User ${ctx.userId} not found.`);
+    }
+
+    const memberUser = await this.discordBotService.fetchGuildMember(
+      user.discordUserId,
+      this.config.severId,
+      true
+    );
+    if (!memberUser) {
+      throw new Error(
+        `User ${user.discordUsername} ${user.discordUserId} is not a member of the server`
+      );
+    }
+
+    const userHasBadRoles = memberUser.roles.cache.some((e) =>
+      e.name === "Trade Restricted"
+    );
+    if (userHasBadRoles) {
+      throw new Error(
+        `User ${user.discordUsername} ${user.discordUserId} is trade restricted`
+      );
+    }
 
     const tftLiveListings =
       await this.postgresService.prisma.tftLiveListing.findMany({
