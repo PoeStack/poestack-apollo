@@ -21,7 +21,8 @@ export class UserResolver {
     private readonly discordService: DiscordService,
     private readonly tftService: TftOneClickService,
     private readonly patreonService: PatreonService
-  ) {}
+  ) {
+  }
 
   @Query(() => Boolean)
   public async checkTftMembership(
@@ -29,7 +30,7 @@ export class UserResolver {
     @Arg("forcePull", { nullable: true }) forcePull: boolean
   ) {
     const resp = await this.postgresService.prisma.userProfile.findUnique({
-      where: { userId: ctx.userId },
+      where: { userId: ctx.userId }
     });
 
     if (!resp.discordUserId) {
@@ -40,22 +41,29 @@ export class UserResolver {
       if (
         resp.tftMemberUpdatedAtTimestamp &&
         new Date().getTime() - resp.tftMemberUpdatedAtTimestamp.getTime() <
-          1000 * 60 * 5
+        1000 * 60 * 5
       ) {
         return resp.tftMember === true;
       }
     }
 
     let membership = null;
+    let restricted = null;
     try {
       membership = await this.tftService.checkUserIsMember(resp.discordUserId);
+      if (membership) {
+        restricted = membership.roles.cache.some((e) =>
+          e.name === "Trade Restricted"
+        );
+      }
+
     } catch (error) {
       Logger.error("error pulling discord membership", error);
     }
 
     await this.postgresService.prisma.userProfile.update({
       where: { userId: ctx.userId },
-      data: { tftMember: membership, tftMemberUpdatedAtTimestamp: new Date() },
+      data: { tftMember: membership, tftMemberUpdatedAtTimestamp: new Date(), tftRestricted: restricted }
     });
 
     return !!membership;
@@ -75,8 +83,8 @@ export class UserResolver {
         data: {
           discordUserId: discordUserInfo.id,
           discordUsername: discordUserInfo.username,
-          discordUserIdUpdatedAtTimestamp: new Date(),
-        },
+          discordUserIdUpdatedAtTimestamp: new Date()
+        }
       });
     }
 
@@ -95,8 +103,8 @@ export class UserResolver {
         where: { userId: ctx.userId },
         data: {
           patreonUserId: patreonCode,
-          patreonUpdatedAtTimestamp: new Date(),
-        },
+          patreonUpdatedAtTimestamp: new Date()
+        }
       });
     }
 
@@ -110,9 +118,9 @@ export class UserResolver {
   ) {
     const resp = await this.postgresService.prisma.userProfile.findFirst({
       where: {
-        poeProfileName: { equals: poeProfileName, mode: "insensitive" },
+        poeProfileName: { equals: poeProfileName, mode: "insensitive" }
       },
-      select: { userId: true, poeProfileName: true },
+      select: { userId: true, poeProfileName: true }
     });
     return resp;
   }
@@ -122,8 +130,8 @@ export class UserResolver {
     const resp = await this.postgresService.prisma.userNotification.findMany({
       where: {
         OR: [{ userId: null }, { userId: ctx.userId }],
-        timestamp: { gt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14) },
-      },
+        timestamp: { gt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 14) }
+      }
     });
     return resp;
   }
@@ -131,13 +139,13 @@ export class UserResolver {
   @Query(() => GqlUserProfile)
   public async myProfile(@Ctx() ctx: PoeStackContext) {
     const resp = await this.postgresService.prisma.userProfile.findUnique({
-      where: { userId: ctx.userId },
+      where: { userId: ctx.userId }
     });
 
     const date = new Date();
     await this.postgresService.prisma.userProfile.updateMany({
       where: { userId: ctx.userId },
-      data: { lastConnectedTimestamp: date },
+      data: { lastConnectedTimestamp: date }
     });
 
     return resp;
@@ -149,7 +157,7 @@ export class UserResolver {
     @Arg("listingPercent") listingPercent: number
   ) {
     const user = await this.postgresService.prisma.userProfile.findUnique({
-      where: { userId: ctx.userId },
+      where: { userId: ctx.userId }
     });
 
     await this.postgresService.prisma.userProfile.update({
@@ -157,9 +165,9 @@ export class UserResolver {
       data: {
         preferences: {
           ...(user.preferences as any),
-          listingPercent: listingPercent,
-        },
-      },
+          listingPercent: listingPercent
+        }
+      }
     });
 
     return true;
@@ -172,19 +180,19 @@ export class UserResolver {
   ) {
     const requestingUser =
       await this.postgresService.prisma.userProfile.findUnique({
-        where: { userId: ctx.userId },
+        where: { userId: ctx.userId }
       });
     if (!requestingUser.roles.includes("admin")) {
       throw new Error("Admin access required.");
     }
 
     const resp = await this.postgresService.prisma.userProfile.findUnique({
-      where: { userId: userId },
+      where: { userId: userId }
     });
     const token = jwt.sign(
       {
         userId,
-        poeProfileName: resp.poeProfileName,
+        poeProfileName: resp.poeProfileName
       },
       process.env.JWT_SECRET
     );
@@ -215,13 +223,14 @@ export class UserResolver {
       discordUsername: null,
       discordUserIdUpdatedAtTimestamp: null,
       tftMember: null,
+      tftRestricted: null,
       tftMemberUpdatedAtTimestamp: null,
       opaqueKey: nanoid(),
       patreonUserId: null,
       patreonTier: null,
       patreonUpdatedAtTimestamp: null,
       preferences: {},
-      roles: [],
+      roles: []
     };
 
     await this.postgresService.prisma.userProfile.upsert({
@@ -231,14 +240,14 @@ export class UserResolver {
         lastConnectedTimestamp: new Date(),
         poeProfileName: poeProfile.name,
         oAuthToken: accessToken,
-        oAuthTokenUpdatedAtTimestamp: new Date(),
-      },
+        oAuthTokenUpdatedAtTimestamp: new Date()
+      }
     });
 
     const token = jwt.sign(
       {
         userId,
-        poeProfileName: poeProfile.name,
+        poeProfileName: poeProfile.name
       },
       process.env.JWT_SECRET
     );

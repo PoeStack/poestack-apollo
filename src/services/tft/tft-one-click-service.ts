@@ -8,6 +8,7 @@ import TftRateLimitService from "./utils/tft-rate-limit-service";
 import PostgresService from "../../services/mongo/postgres-service";
 import { OneClickMessageHistory } from "@prisma/client";
 import DiscordService from "../../services/discord-service";
+import { GuildMember } from "discord.js";
 
 @singleton()
 export default class TftOneClickService {
@@ -25,13 +26,16 @@ export default class TftOneClickService {
     );
   }
 
-  public async checkUserIsMember(discordId: string): Promise<boolean> {
+
+
+
+  public async checkUserIsMember(discordId: string): Promise<GuildMember> {
     const user = await this.discordBotService.fetchGuildMember(
       discordId,
       this.config.severId,
       true
     );
-    return !!user;
+    return user;
   }
 
   public async postOneClickMesage(

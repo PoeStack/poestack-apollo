@@ -3,27 +3,21 @@ import { PoeStackContext } from "index";
 import {
   GqlStashViewAutomaticSnapshotSettings,
   GqlTftLiveListing,
-  GqlTftLiveListingSearch,
+  GqlTftLiveListingSearch
 } from "../models/basic-models";
 import PostgresService from "../services/mongo/postgres-service";
 import TftDiscordBotService from "services/tft/tft-discord-bot-service";
 import { singleton } from "tsyringe";
 import { Arg, Ctx, Query, Resolver } from "type-graphql";
 import { Prisma } from "@prisma/client";
-import { TftDiscordServerConfig } from "services/tft/tft-one-click-service";
 
 @Resolver()
 @singleton()
 export class TftLiveListingsResolver {
-  private config: TftDiscordServerConfig;
 
   constructor(
-    private readonly postgresService: PostgresService,
-    private discordBotService: TftDiscordBotService,
+    private readonly postgresService: PostgresService
   ) {
-    this.config = JSON.parse(
-      fs.readFileSync("data/tft/discord-bulk-listing-config.json").toString()
-    );
   }
 
   @Query(() => [GqlTftLiveListing])
@@ -40,24 +34,8 @@ export class TftLiveListingsResolver {
       throw new Error(`User ${ctx.userId} not found.`);
     }
 
-    const memberUser = await this.discordBotService.fetchGuildMember(
-      user.discordUserId,
-      this.config.severId,
-      true
-    );
-    if (!memberUser) {
-      throw new Error(
-        `User ${user.discordUsername} ${user.discordUserId} is not a member of the server`
-      );
-    }
-
-    const userHasBadRoles = memberUser.roles.cache.some((e) =>
-      e.name === "Trade Restricted"
-    );
-    if (userHasBadRoles) {
-      throw new Error(
-        `User ${user.discordUsername} ${user.discordUserId} is trade restricted`
-      );
+    if (user.tftRestricted) {
+      throw new Error(`User ${ctx.userId} is restricted on TFT.`);
     }
 
     const tftLiveListings =
@@ -65,9 +43,9 @@ export class TftLiveListingsResolver {
         where: {
           tag: "five-way",
           delistedAtTimestamp: null,
-          updatedAtTimestamp: { gte: new Date(Date.now() - 1000 * 60 * 15) },
+          updatedAtTimestamp: { gte: new Date(Date.now() - 1000 * 60 * 15) }
         },
-        orderBy: { updatedAtTimestamp: "desc" },
+        orderBy: { updatedAtTimestamp: "desc" }
       });
     return tftLiveListings;
   }
@@ -82,7 +60,7 @@ export class TftLiveListingsResolver {
     }
 
     const globalSearchConditions: Prisma.Sql[] = [
-      Prisma.sql`tll."tag" = ${search.tag} and tll."updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '30 mins'`,
+      Prisma.sql`tll."tag" = ${search.tag} and tll."updatedAtTimestamp" > now() at time zone 'utc' - INTERVAL '30 mins'`
     ];
 
     for (const filterGroup of search.propertyFilterGroups) {
@@ -106,9 +84,10 @@ export class TftLiveListingsResolver {
     )}`;
 
     const tftLiveListings = await this.postgresService.prisma.$queryRaw`
-    select * from "TftLiveListing" tll
-    ${where}
-    order by tll."updatedAtTimestamp" desc`;
+        select *
+        from "TftLiveListing" tll
+            ${where}
+        order by tll."updatedAtTimestamp" desc`;
     return tftLiveListings;
   }
 }
