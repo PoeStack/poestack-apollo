@@ -63,7 +63,7 @@ export class UserResolver {
 
     await this.postgresService.prisma.userProfile.update({
       where: { userId: ctx.userId },
-      data: { tftMember: membership, tftMemberUpdatedAtTimestamp: new Date(), tftRestricted: restricted }
+      data: { tftMember: !!membership, tftMemberUpdatedAtTimestamp: new Date(), tftRestricted: restricted }
     });
 
     return !!membership;
