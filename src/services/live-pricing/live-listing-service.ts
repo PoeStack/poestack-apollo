@@ -87,6 +87,10 @@ export default class LiveListingService {
       return mappedListings.filter((e) => e.listedValue >= 100)
     }
 
+    if (search.itemGroupHashString == "dac72c76c8099a3cc512ba2d9961db84036694cc") {
+      return mappedListings.map((e) => ({ ...e, listedValue: 1 }))
+    }
+
     return mappedListings.filter((e) => e.listedValue >= .001);
   }
 
