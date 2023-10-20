@@ -87,7 +87,7 @@ export default class LiveListingService {
       return mappedListings.filter((e) => e.listedValue >= 100)
     }
 
-    return mappedListings;
+    return mappedListings.filter((e) => e.listedValue >= .001);
   }
 
   public async fetchActiveLiveListingItemGroupsByLeague(): Promise<
