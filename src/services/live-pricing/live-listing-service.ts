@@ -27,7 +27,7 @@ export default class LiveListingService {
     updateAgeOnHas: false,
   });
 
-  constructor(private readonly postgresService: PostgresService) {}
+  constructor(private readonly postgresService: PostgresService) { }
 
   public async fetchListings(
     search: LiveListingSearch
@@ -82,6 +82,10 @@ export default class LiveListingService {
       mappedListings: mappedListings.length,
       ms: sw.elapsedMS(),
     });
+
+    if (search.itemGroupHashString === 'cceb40e33d9237cb6a06037e739e40aa9a548c70') {
+      return mappedListings.filter((e) => e.listedValue >= 100)
+    }
 
     return mappedListings;
   }
