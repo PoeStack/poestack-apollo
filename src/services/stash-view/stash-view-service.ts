@@ -32,7 +32,7 @@ export default class StashViewService {
     opaqueKey: string,
     input: GqlStashViewSettings
   ): Promise<string> {
-    if(input.ign?.include("@") {
+    if(input.ign?.include("@")) {
       throw new Error("ign cannot include @");
     }
     
