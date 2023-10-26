@@ -23,6 +23,7 @@ export default class PoeApi {
     "account:profile",
     "account:stashes",
     "account:characters",
+    "account:leagues",
     "account:league_accounts",
   ];
 
