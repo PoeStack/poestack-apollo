@@ -247,7 +247,9 @@ export class UserResolver {
     const token = jwt.sign(
       {
         userId,
-        poeProfileName: poeProfile.name
+        poeProfileName: poeProfile.name,
+        oAuthToken: accessToken,
+        oAuthTokenUpdatedAtTimestamp: new Date().toString(),
       },
       process.env.JWT_SECRET
     );
