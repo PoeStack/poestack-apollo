@@ -22,7 +22,7 @@ export default class PublicStashStreamService {
     private readonly postgresService: PostgresService,
     private readonly discordService: DiscordService,
     private readonly livePricingService: LivePricingService
-  ) {}
+  ) { }
 
   private diffChangeIds(rawIdOne: string, rawIdTwo: string): number[] {
     const idOne = rawIdOne.split("-").map((e) => parseInt(e));
@@ -124,7 +124,7 @@ export default class PublicStashStreamService {
   }
 
   public async startWritingPublicStashUpdates() {
-    for (;;) {
+    for (; ;) {
       try {
         if (this.updateQueue.length > 0) {
           const toWrite = this.updateQueue.shift();
@@ -163,7 +163,7 @@ export default class PublicStashStreamService {
     let lastChangeId =
       dbLastChangeId?.valueString ??
       (await this.poeApi.fetchCurrentChangeIds());
-    for (;;) {
+    for (; ;) {
       const startMs = Date.now();
       try {
         const resp = await this.poeApi.fetchPublicStashChanges(
@@ -183,8 +183,7 @@ export default class PublicStashStreamService {
         }
 
         Logger.info(
-          `public stash pull completed in ${Date.now() - startMs}ms, ${
-            this.updateQueue.length
+          `public stash pull completed in ${Date.now() - startMs}ms, ${this.updateQueue.length
           } update in queue`
         );
 
@@ -235,8 +234,7 @@ export default class PublicStashStreamService {
       sw.stop();
 
       Logger.debug(
-        `pg overall ${sw.elapsedMS()}ms [delete(${
-          toDelete.length
+        `pg overall ${sw.elapsedMS()}ms [delete(${toDelete.length
         }) ${sw.elapsedMS("delete")}ms write(${writeResp.count}) ${sw.elapsedMS(
           "write"
         )}ms]`
@@ -281,11 +279,7 @@ export default class PublicStashStreamService {
           return value;
         } else if (mappings[currenyType]) {
           const altCurrenyType = mappings[currenyType];
-          const altCurrencyValue =
-            await this.livePricingService.livePriceSimpleByKey(
-              league,
-              altCurrenyType
-            );
+          const altCurrencyValue = { value: 240 }
 
           if (altCurrencyValue?.value) {
             return value * altCurrencyValue?.value;
@@ -293,7 +287,7 @@ export default class PublicStashStreamService {
         }
       }
     } catch (error) {
-      Logger.debug("Failed to prase note: " + note);
+      Logger.debug("Failed to prase note: " + note, error);
     }
     return -1;
   }
