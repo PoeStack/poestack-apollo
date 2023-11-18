@@ -251,7 +251,7 @@ export class UserResolver {
         oAuthToken: accessToken,
         oAuthTokenUpdatedAtTimestamp: new Date().toString(),
         discordUserId: "test-id-00000",
-        discordDisplatName: "TestDisplatName",
+        discordDisplayName: "TestDisplayName",
       },
       process.env.JWT_SECRET
     );
