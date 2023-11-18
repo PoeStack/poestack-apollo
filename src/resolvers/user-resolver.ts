@@ -250,6 +250,8 @@ export class UserResolver {
         poeProfileName: poeProfile.name,
         oAuthToken: accessToken,
         oAuthTokenUpdatedAtTimestamp: new Date().toString(),
+        discordUserId: "test-id-00000",
+        discordDisplatName: "TestDisplatName",
       },
       process.env.JWT_SECRET
     );
