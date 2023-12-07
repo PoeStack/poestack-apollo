@@ -19,7 +19,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     export: StashViewExporters.exportTftCompassesBulk,
     enableOverrides: true,
     channels: {
-      Ancestor: {
+      Affliction: {
         channelId: "939791301371654185",
         timeout: 900,
         disableImages: true,
@@ -38,7 +38,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   "essence high": {
     tags: ["essence"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "874662778592460851", timeout: 900 } },
+    channels: { Affliction: { channelId: "874662778592460851", timeout: 900 } },
     filter: (item) =>
       [
         "shrieking",
@@ -54,14 +54,14 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   essence: {
     tags: ["essence"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "874662778592460851", timeout: 900 } },
+    channels: { Affliction: { channelId: "874662778592460851", timeout: 900 } },
   },
   heist: {
     tags: ["contract", "blueprint"],
     enableOverrides: true,
     export: StashViewExporters.exportTftHeistBulk,
     channels: {
-      Ancestor: {
+      Affliction: {
         channelId: "973701260781969418",
         timeout: 900,
         disableImages: true,
@@ -77,7 +77,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     tags: ["currency"],
     export: StashViewExporters.exportTftGenericBulk,
     channels: {
-      Ancestor: {
+      Affliction: {
         channelId: "904002942884003870",
         timeout: 900,
       },
@@ -88,7 +88,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     enableOverrides: true,
     export: StashViewExporters.exportTftBeastBulk,
     channels: {
-      Ancestor: {
+      Affliction: {
         channelId: "874661938032943134",
         timeout: 900,
         disableImages: true,
@@ -103,57 +103,57 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   fossil: {
     tags: ["fossil"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "874663081400209499", timeout: 900 } },
+    channels: { Affliction: { channelId: "874663081400209499", timeout: 900 } },
   },
   delve: {
     tags: ["fossil", "resonator"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "874663081400209499", timeout: 900 } },
+    channels: { Affliction: { channelId: "874663081400209499", timeout: 900 } },
   },
   scarabs: {
     tags: ["scarab"],
     export: StashViewExporters.exportTftGenericBulk,
     channels: {
-      Ancestor: { channelId: "874669036863094804", timeout: 900 },
+      Affliction: { channelId: "874669036863094804", timeout: 900 },
       Standard: { channelId: "961952608757624842", timeout: 900 },
     },
   },
   catalysts: {
     tags: ["catalyst"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "874663181258211358", timeout: 900 } },
+    channels: { Affliction: { channelId: "874663181258211358", timeout: 900 } },
   },
   fragments: {
     tags: ["fragment"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "906960098088341505", timeout: 900 } },
+    channels: { Affliction: { channelId: "906960098088341505", timeout: 900 } },
   },
   cards: {
     tags: ["card"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "882247835188346951", timeout: 900 } },
+    channels: { Affliction: { channelId: "882247835188346951", timeout: 900 } },
   },
   tattoos: {
     tags: ["tattoo"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "1144748831670546542", timeout: 900 } },
+    channels: { Affliction: { channelId: "1144748831670546542", timeout: 900 } },
   },
   "delirium orbs": {
     tags: ["delirium orb"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "882251982830731315", timeout: 900 } },
+    channels: { Affliction: { channelId: "882251982830731315", timeout: 900 } },
   },
   breach: {
     tags: ["breach"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "874671016100659280", timeout: 900 } },
+    channels: { Affliction: { channelId: "874671016100659280", timeout: 900 } },
   },
   logbooks: {
     tags: ["logbook"],
     enableOverrides: true,
     export: StashViewExporters.exportLogbooksBulk,
     channels: {
-      Ancestor: {
+      Affliction: {
         channelId: "868188612376809513",
         timeout: 900,
         disableImages: true,
@@ -163,11 +163,11 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
   oils: {
     tags: ["oil"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "882600782199914496", timeout: 900 } },
+    channels: { Affliction: { channelId: "882600782199914496", timeout: 900 } },
   },
   incubators: {
     tags: ["incubator"],
     export: StashViewExporters.exportTftGenericBulk,
-    channels: { Ancestor: { channelId: "882247870143692800", timeout: 900 } },
+    channels: { Affliction: { channelId: "882247870143692800", timeout: 900 } },
   },
 };
