@@ -114,7 +114,7 @@ export const STASH_VIEW_TFT_CATEGORIES: Record<string, TftCategory> = {
     tags: ["scarab"],
     export: StashViewExporters.exportTftGenericBulk,
     channels: {
-      Affliction: { channelId: "874669036863094804", timeout: 900 },
+      Affliction: { channelId: "1185693650433364018", timeout: 900 },
       Standard: { channelId: "961952608757624842", timeout: 900 },
     },
   },
